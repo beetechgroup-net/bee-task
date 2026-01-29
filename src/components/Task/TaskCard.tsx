@@ -1,5 +1,14 @@
 import React from "react";
-import { Play, Pause, Trash2, Clock, CheckCircle } from "lucide-react";
+import {
+  Play,
+  Pause,
+  Trash2,
+  Clock,
+  CheckCircle,
+  Circle,
+  Check,
+  RotateCcw,
+} from "lucide-react";
 import { useStore } from "../../context/StoreContext";
 import type { Task } from "../../types";
 import { formatDuration } from "../../utils/dateUtils";
@@ -40,11 +49,13 @@ export const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
               ? "var(--color-success)"
               : "var(--color-text-secondary)",
         }}
+        title={task.status === "done" ? "Mark as pending" : "Mark as done"}
       >
-        <CheckCircle
-          size={20}
-          fill={task.status === "done" ? "currentColor" : "none"}
-        />
+        {task.status === "done" ? (
+          <CheckCircle size={20} fill="currentColor" />
+        ) : (
+          <Circle size={20} />
+        )}
       </button>
 
       <div style={{ flex: 1 }}>
@@ -127,6 +138,29 @@ export const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
         ) : (
           <Play size={18} fill="currentColor" style={{ marginLeft: "2px" }} />
         )}
+      </button>
+
+      <button
+        onClick={handleToggleStatus}
+        style={{
+          backgroundColor:
+            task.status === "done"
+              ? "var(--color-bg-tertiary)"
+              : "var(--color-success)",
+          color:
+            task.status === "done" ? "var(--color-text-secondary)" : "#fff",
+          width: "36px",
+          height: "36px",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.2s",
+          opacity: task.status === "done" ? 0.7 : 1,
+        }}
+        title={task.status === "done" ? "Reopen task" : "Finish task"}
+      >
+        {task.status === "done" ? <RotateCcw size={18} /> : <Check size={18} />}
       </button>
 
       <button
