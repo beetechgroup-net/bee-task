@@ -13,7 +13,6 @@ import {
   endOfWeek,
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { Task } from "../../types";
 
 export const CalendarView: React.FC = () => {
   const { tasks, projects } = useStore();
@@ -135,7 +134,7 @@ export const CalendarView: React.FC = () => {
           </div>
         ))}
 
-        {calendarDays.map((day, idx) => {
+        {calendarDays.map((day, _idx) => {
           const isCurrentMonth = isSameMonth(day, monthStart);
           const isTodayDate = isSameDay(day, new Date());
           const dayTasks = getTasksForDate(day);

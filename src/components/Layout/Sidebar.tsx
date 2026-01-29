@@ -3,10 +3,8 @@ import {
   LayoutDashboard,
   CheckSquare,
   Calendar as CalendarIcon,
-  PieChart,
   Layers,
 } from "lucide-react";
-import { useStore } from "../../context/StoreContext";
 
 interface SidebarProps {
   currentView: string;
@@ -17,7 +15,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentView,
   onChangeView,
 }) => {
-  const { projects } = useStore();
 
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
