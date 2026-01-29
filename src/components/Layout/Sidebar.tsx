@@ -5,17 +5,19 @@ import {
   Calendar as CalendarIcon,
   Layers,
 } from "lucide-react";
+import classNames from "classnames";
 
 interface SidebarProps {
   currentView: string;
   onChangeView: (view: string) => void;
+  isOpen?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentView,
   onChangeView,
+  isOpen = false,
 }) => {
-
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "tasks", label: "My Tasks", icon: CheckSquare },
@@ -25,8 +27,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div
+      className={classNames("sidebar-mobile", { open: isOpen })}
       style={{
-        width: "260px",
+        width: "var(--sidebar-width)",
         height: "100vh",
         backgroundColor: "var(--color-bg-secondary)",
         borderRight: "1px solid var(--color-bg-tertiary)",
@@ -98,6 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 transition: "all 0.2s ease",
                 textAlign: "left",
                 width: "100%",
+                fontSize: "var(--font-size-base)",
               }}
             >
               <item.icon size={20} />
