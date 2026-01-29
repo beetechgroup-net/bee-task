@@ -8,11 +8,28 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
   const [projectId, setProjectId] = useState(projects[0]?.id || "");
   const [type, setType] = useState("Development");
   const [isCustomType, setIsCustomType] = useState(false);
+  const [isPastTask, setIsPastTask] = useState(false);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    addTask(title, projectId, type);
+
+    if (isPastTask) {
+      if (!startTime || !endTime) return;
+      const start = new Date(startTime).getTime();
+      const end = new Date(endTime).getTime();
+
+      if (end <= start) {
+        alert("End time must be after start time");
+        return;
+      }
+
+      addTask(title, projectId, type, { startTime: start, endTime: end });
+    } else {
+      addTask(title, projectId, type);
+    }
     onCancel();
   };
 
@@ -54,7 +71,8 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
           onChange={(e) => setTitle(e.target.value)}
           style={{
             width: "100%",
-            padding: "0.75rem",
+            height: "46px",
+            padding: "0 0.75rem",
             borderRadius: "var(--radius-sm)",
             border: "1px solid var(--color-bg-tertiary)",
             backgroundColor: "var(--color-bg-primary)",
@@ -69,7 +87,8 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
             onChange={(e) => setProjectId(e.target.value)}
             style={{
               flex: 1,
-              padding: "0.5rem",
+              height: "46px",
+              padding: "0 0.75rem",
               borderRadius: "var(--radius-sm)",
               border: "1px solid var(--color-bg-tertiary)",
               backgroundColor: "var(--color-bg-primary)",
@@ -92,7 +111,8 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
               }}
               style={{
                 flex: 1,
-                padding: "0.5rem",
+                height: "46px",
+                padding: "0 0.75rem",
                 borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--color-bg-tertiary)",
                 backgroundColor: "var(--color-bg-primary)",
@@ -113,7 +133,8 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
               onBlur={() => !type && setIsCustomType(false)}
               style={{
                 flex: 1,
-                padding: "0.5rem",
+                height: "46px",
+                padding: "0 0.75rem",
                 borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--color-bg-tertiary)",
                 backgroundColor: "var(--color-bg-primary)",
@@ -123,9 +144,79 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
           )}
         </div>
 
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <input
+            type="checkbox"
+            id="isPastTask"
+            checked={isPastTask}
+            onChange={(e) => setIsPastTask(e.target.checked)}
+            style={{ accentColor: "var(--color-accent)" }}
+          />
+          <label htmlFor="isPastTask" style={{ fontSize: "0.9rem" }}>
+            Log work done in the past
+          </label>
+        </div>
+
+        {isPastTask && (
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div style={{ flex: 1 }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.8rem",
+                  marginBottom: "0.25rem",
+                  color: "var(--color-text-secondary)",
+                }}
+              >
+                Start Time
+              </label>
+              <input
+                type="datetime-local"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                style={{
+                  width: "100%",
+                  height: "46px",
+                  padding: "0 0.75rem",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--color-bg-tertiary)",
+                  backgroundColor: "var(--color-bg-primary)",
+                  color: "var(--color-text-primary)",
+                }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.8rem",
+                  marginBottom: "0.25rem",
+                  color: "var(--color-text-secondary)",
+                }}
+              >
+                End Time
+              </label>
+              <input
+                type="datetime-local"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                style={{
+                  width: "100%",
+                  height: "46px",
+                  padding: "0 0.75rem",
+                  borderRadius: "var(--radius-sm)",
+                  border: "1px solid var(--color-bg-tertiary)",
+                  backgroundColor: "var(--color-bg-primary)",
+                  color: "var(--color-text-primary)",
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={!title.trim()}
+          disabled={!title.trim() || (isPastTask && (!startTime || !endTime))}
           style={{
             backgroundColor: "var(--color-accent)",
             color: "#fff",
@@ -133,6 +224,10 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
             borderRadius: "var(--radius-sm)",
             fontWeight: 500,
             marginTop: "0.5rem",
+            opacity:
+              !title.trim() || (isPastTask && (!startTime || !endTime))
+                ? 0.5
+                : 1,
           }}
         >
           Add Task

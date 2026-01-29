@@ -7,7 +7,12 @@ interface StoreContextType {
   tasks: Task[];
   projects: Project[];
 
-  addTask: (title: string, projectId: string, type: TaskType) => void;
+  addTask: (
+    title: string,
+    projectId: string,
+    type: TaskType,
+    initialLog?: { startTime: number; endTime: number },
+  ) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   toggleTaskLog: (id: string) => void;
@@ -48,15 +53,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => clearInterval(interval);
   }, [tasks]);
 
-  const addTask = (title: string, projectId: string, type: string) => {
+  const addTask = (
+    title: string,
+    projectId: string,
+    type: string,
+    initialLog?: { startTime: number; endTime: number },
+  ) => {
+    const isPastTask = !!initialLog;
     const newTask: Task = {
       id: uuidv4(),
       title,
       projectId,
       type,
-      status: "todo",
-      logs: [],
-      createdAt: Date.now(),
+      status: isPastTask ? "done" : "todo",
+      logs: isPastTask
+        ? [
+            {
+              id: uuidv4(),
+              startTime: initialLog.startTime,
+              endTime: initialLog.endTime,
+              duration: initialLog.endTime - initialLog.startTime,
+            },
+          ]
+        : [],
+      createdAt: isPastTask ? initialLog.startTime : Date.now(),
     };
     setTasks([...tasks, newTask]);
   };
