@@ -41,23 +41,6 @@ export const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
         transition: "opacity 0.2s",
       }}
     >
-      <button
-        onClick={handleToggleStatus}
-        style={{
-          color:
-            task.status === "done"
-              ? "var(--color-success)"
-              : "var(--color-text-secondary)",
-        }}
-        title={task.status === "done" ? "Mark as pending" : "Mark as done"}
-      >
-        {task.status === "done" ? (
-          <CheckCircle size={20} fill="currentColor" />
-        ) : (
-          <Circle size={20} />
-        )}
-      </button>
-
       <div style={{ flex: 1 }}>
         <h4
           style={{
