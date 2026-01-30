@@ -13,10 +13,23 @@ export const DailyStandupView: React.FC = () => {
 
   const yesterdayTasks = tasks.filter((task) => workedOnYesterday(task));
 
-  const todayTasks = tasks.filter(
+  const workedOnToday = (task: Task) => {
+    return task.logs.some(
+      (log) => isToday(log.startTime) || (log.endTime && isToday(log.endTime)),
+    );
+  };
+
+  // Actually simpler:
+  // Did: In Progress OR (Done & WorkedToday)
+  // Will Do: Todo
+
+  const whatIDidTodayTasks = tasks.filter(
     (task) =>
-      task.status !== "done" || task.logs.some((log) => isToday(log.startTime)),
+      task.status === "in-progress" ||
+      (task.status === "done" && workedOnToday(task)),
   );
+
+  const whatIWillDoTodayTasks = tasks.filter((task) => task.status === "todo");
 
   const renderTaskItem = (task: Task, context: "yesterday" | "today") => {
     const duration = getTaskDuration(task);
@@ -120,7 +133,40 @@ export const DailyStandupView: React.FC = () => {
               fontSize: "1.25rem",
               fontWeight: 600,
               marginBottom: "1rem",
-              color: "var(--color-text-accent)",
+              color: "var(--color-accent)",
+            }}
+          >
+            What I did today
+          </h3>
+          <div
+            style={{
+              backgroundColor: "var(--color-bg-secondary)",
+              padding: "1.5rem",
+              borderRadius: "var(--radius-lg)",
+              border: "1px solid var(--color-accent)",
+              marginBottom: "2rem",
+            }}
+          >
+            {whatIDidTodayTasks.length > 0 ? (
+              whatIDidTodayTasks.map((t) => renderTaskItem(t, "today"))
+            ) : (
+              <p
+                style={{
+                  color: "var(--color-text-secondary)",
+                  fontStyle: "italic",
+                }}
+              >
+                No work tracked yet today.
+              </p>
+            )}
+          </div>
+
+          <h3
+            style={{
+              fontSize: "1.25rem",
+              fontWeight: 600,
+              marginBottom: "1rem",
+              color: "var(--color-text-primary)",
             }}
           >
             What I will do today
@@ -130,11 +176,11 @@ export const DailyStandupView: React.FC = () => {
               backgroundColor: "var(--color-bg-secondary)",
               padding: "1.5rem",
               borderRadius: "var(--radius-lg)",
-              border: "1px solid var(--color-accent)",
+              border: "1px dashed var(--color-bg-tertiary)",
             }}
           >
-            {todayTasks.length > 0 ? (
-              todayTasks.map((t) => renderTaskItem(t, "today"))
+            {whatIWillDoTodayTasks.length > 0 ? (
+              whatIWillDoTodayTasks.map((t) => renderTaskItem(t, "today"))
             ) : (
               <p
                 style={{
@@ -142,7 +188,7 @@ export const DailyStandupView: React.FC = () => {
                   fontStyle: "italic",
                 }}
               >
-                Nothing planned for today yet.
+                No pending tasks for today.
               </p>
             )}
           </div>
