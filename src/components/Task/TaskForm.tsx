@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useStore } from "../../context/StoreContext";
 import { X, Plus, Trash2 } from "lucide-react";
+import { format } from "date-fns";
 import type { Task } from "../../types";
 
 interface TaskFormProps {
@@ -34,9 +35,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     initialTask && initialTask.logs.length > 0
       ? initialTask.logs.map((log) => ({
           id: log.id,
-          startTime: new Date(log.startTime).toISOString().slice(0, 16), // Format for datetime-local
+          startTime: format(new Date(log.startTime), "yyyy-MM-dd'T'HH:mm"), // Format for datetime-local
           endTime: log.endTime
-            ? new Date(log.endTime).toISOString().slice(0, 16)
+            ? format(new Date(log.endTime), "yyyy-MM-dd'T'HH:mm")
             : "",
         }))
       : [{ startTime: "", endTime: "" }],
