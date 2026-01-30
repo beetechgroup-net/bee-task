@@ -4,8 +4,6 @@ import {
   Pause,
   Trash2,
   Clock,
-  CheckCircle,
-  Circle,
   Check,
   RotateCcw,
 } from "lucide-react";
