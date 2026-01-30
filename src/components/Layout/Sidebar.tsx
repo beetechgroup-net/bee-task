@@ -7,6 +7,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import classNames from "classnames";
+import { PomodoroTimer } from "../Pomodoro/PomodoroTimer";
 
 interface SidebarProps {
   currentView: string;
@@ -112,6 +113,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
       </nav>
+
+      <div style={{ marginTop: "auto" }}>
+        <PomodoroTimer />
+      </div>
     </div>
   );
 };
