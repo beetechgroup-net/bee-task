@@ -16,7 +16,19 @@ export const TasksView: React.FC = () => {
       if (filter === "done") return t.status === "done";
       return true;
     })
-    .sort((a, b) => b.createdAt - a.createdAt);
+    .sort((a, b) => {
+      // Sort by priority first (high > medium > low)
+      const priorityOrder = { high: 3, medium: 2, low: 1 };
+      const priorityA = priorityOrder[a.priority || "low"];
+      const priorityB = priorityOrder[b.priority || "low"];
+
+      if (priorityA !== priorityB) {
+        return priorityB - priorityA;
+      }
+
+      // Then by creation date (newest first)
+      return b.createdAt - a.createdAt;
+    });
 
   return (
     <div>

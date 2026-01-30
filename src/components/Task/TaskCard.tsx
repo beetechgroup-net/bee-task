@@ -84,6 +84,21 @@ export const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
             <span style={{ color: "var(--color-text-secondary)" }}>
               {task.type}
             </span>
+            <span style={{ color: "var(--color-text-secondary)" }}>•</span>
+            <span
+              style={{
+                color:
+                  task.priority === "high"
+                    ? "var(--color-accent)"
+                    : task.priority === "medium"
+                      ? "#eab308"
+                      : "var(--color-text-secondary)",
+                fontWeight: 500,
+                textTransform: "capitalize",
+              }}
+            >
+              {task.priority || "low"}
+            </span>
           </div>
         </div>
 

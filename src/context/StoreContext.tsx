@@ -11,6 +11,7 @@ interface StoreContextType {
     title: string,
     projectId: string,
     type: TaskType,
+    priority: "low" | "medium" | "high",
     initialLog?: { startTime: number; endTime: number },
   ) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
@@ -57,6 +58,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     title: string,
     projectId: string,
     type: string,
+    priority: "low" | "medium" | "high",
     initialLog?: { startTime: number; endTime: number },
   ) => {
     const isPastTask = !!initialLog;
@@ -65,6 +67,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
       title,
       projectId,
       type,
+      priority,
       status: isPastTask ? "done" : "todo",
       logs: isPastTask
         ? [

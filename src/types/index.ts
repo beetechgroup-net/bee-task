@@ -21,11 +21,14 @@ export interface TaskHistory {
   timestamp: number;
 }
 
+export type Priority = "low" | "medium" | "high";
+
 export interface Task {
   id: string;
   title: string;
   description?: string;
   projectId: string;
+  priority: Priority;
   type: TaskType;
   status: TaskStatus;
   logs: TaskLog[];

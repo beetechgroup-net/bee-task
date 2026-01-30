@@ -7,6 +7,7 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
   const [title, setTitle] = useState("");
   const [projectId, setProjectId] = useState(projects[0]?.id || "");
   const [type, setType] = useState("Development");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [isCustomType, setIsCustomType] = useState(false);
   const [isPastTask, setIsPastTask] = useState(false);
   const [startTime, setStartTime] = useState("");
@@ -26,9 +27,12 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
         return;
       }
 
-      addTask(title, projectId, type, { startTime: start, endTime: end });
+      addTask(title, projectId, type, priority, {
+        startTime: start,
+        endTime: end,
+      });
     } else {
-      addTask(title, projectId, type);
+      addTask(title, projectId, type, priority);
     }
     onCancel();
   };
@@ -142,6 +146,26 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
               }}
             />
           )}
+
+          <select
+            value={priority}
+            onChange={(e) =>
+              setPriority(e.target.value as "low" | "medium" | "high")
+            }
+            style={{
+              flex: 0.8,
+              height: "46px",
+              padding: "0 0.75rem",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--color-bg-tertiary)",
+              backgroundColor: "var(--color-bg-primary)",
+              color: "var(--color-text-primary)",
+            }}
+          >
+            <option value="low">Low Priority</option>
+            <option value="medium">Medium Priority</option>
+            <option value="high">High Priority</option>
+          </select>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
