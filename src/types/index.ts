@@ -15,6 +15,12 @@ export interface TaskLog {
   duration: number; // in milliseconds
 }
 
+export interface TaskHistory {
+  id: string;
+  action: "create" | "start" | "pause" | "finish" | "restart";
+  timestamp: number;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -23,5 +29,6 @@ export interface Task {
   type: TaskType;
   status: TaskStatus;
   logs: TaskLog[];
+  history?: TaskHistory[];
   createdAt: number;
 }

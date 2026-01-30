@@ -76,6 +76,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
             },
           ]
         : [],
+      history: [
+        {
+          id: uuidv4(),
+          action: "create",
+          timestamp: isPastTask ? initialLog.startTime : Date.now(),
+        },
+        ...(isPastTask
+          ? [
+              {
+                id: uuidv4(),
+                action: "finish" as const,
+                timestamp: initialLog.endTime,
+              },
+            ]
+          : []),
+      ],
       createdAt: isPastTask ? initialLog.startTime : Date.now(),
     };
     setTasks([...tasks, newTask]);
@@ -100,6 +116,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
               now - newLogs[activeLogIndex].startTime;
             updatedTask.logs = newLogs;
           }
+          updatedTask.history = [
+            ...(updatedTask.history || []),
+            { id: uuidv4(), action: "finish", timestamp: now },
+          ];
+        } else if (updates.status === "todo" && t.status === "done") {
+          updatedTask.history = [
+            ...(updatedTask.history || []),
+            { id: uuidv4(), action: "restart", timestamp: now },
+          ];
         }
         return updatedTask;
       });
@@ -132,12 +157,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
           newLogs[activeLogIndex].endTime = now;
           newLogs[activeLogIndex].duration =
             now - newLogs[activeLogIndex].startTime;
-          return { ...task, logs: newLogs };
+          return {
+            ...task,
+            logs: newLogs,
+            history: [
+              ...(task.history || []),
+              { id: uuidv4(), action: "pause", timestamp: now },
+            ],
+          };
         } else {
           return {
             ...task,
             status: "in-progress",
             logs: [...task.logs, { id: uuidv4(), startTime: now, duration: 0 }],
+            history: [
+              ...(task.history || []),
+              { id: uuidv4(), action: "start", timestamp: now },
+            ],
           };
         }
       });
