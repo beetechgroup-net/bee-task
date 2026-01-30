@@ -4,6 +4,7 @@ import {
   CheckSquare,
   Calendar as CalendarIcon,
   Layers,
+  ClipboardList,
 } from "lucide-react";
 import classNames from "classnames";
 
@@ -22,6 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "tasks", label: "My Tasks", icon: CheckSquare },
     { id: "projects", label: "Projects", icon: Layers },
+    { id: "standard-tasks", label: "Standard Tasks", icon: ClipboardList },
     { id: "calendar", label: "Calendar", icon: CalendarIcon },
   ];
 

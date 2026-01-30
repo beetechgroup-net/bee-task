@@ -35,3 +35,21 @@ export interface Task {
   history?: TaskHistory[];
   createdAt: number;
 }
+
+export interface StandardTaskInterval {
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
+}
+
+export interface StandardTask {
+  id: string;
+  title: string;
+  description?: string;
+  projectId?: string;
+  type?: TaskType;
+  priority?: Priority;
+  intervals?: StandardTaskInterval[]; // Optional for backward compatibility during dev, but ideally required
+  // Deprecated fields (optional to keep for a moment or remove)
+  startTime?: string;
+  endTime?: string;
+}

@@ -3,34 +3,43 @@ import { useStore } from "../../context/StoreContext";
 import { X } from "lucide-react";
 
 export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
-  const { addTask, projects } = useStore();
+  const { addTask, projects, standardTasks } = useStore();
   const [title, setTitle] = useState("");
   const [projectId, setProjectId] = useState(projects[0]?.id || "");
   const [type, setType] = useState("Development");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [isCustomType, setIsCustomType] = useState(false);
   const [isPastTask, setIsPastTask] = useState(false);
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [intervals, setIntervals] = useState<
+    { startTime: string; endTime: string }[]
+  >([{ startTime: "", endTime: "" }]); // State for multiple intervals input
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     if (isPastTask) {
-      if (!startTime || !endTime) return;
-      const start = new Date(startTime).getTime();
-      const end = new Date(endTime).getTime();
+      // Validate all intervals
+      // We need at least one valid interval if isPastTask is true
+      const validIntervals = intervals.filter((i) => i.startTime && i.endTime);
 
-      if (end <= start) {
-        alert("End time must be after start time");
-        return;
+      if (validIntervals.length === 0) return;
+
+      const parsedLogs = validIntervals.map((i) => {
+        const start = new Date(i.startTime).getTime();
+        const end = new Date(i.endTime).getTime();
+        return { startTime: start, endTime: end };
+      });
+
+      // Validate times
+      for (const log of parsedLogs) {
+        if (log.endTime <= log.startTime) {
+          alert("End time must be after start time for all intervals");
+          return;
+        }
       }
 
-      addTask(title, projectId, type, priority, {
-        startTime: start,
-        endTime: end,
-      });
+      addTask(title, projectId, type, priority, parsedLogs);
     } else {
       addTask(title, projectId, type, priority);
     }
@@ -84,6 +93,59 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
             fontSize: "1rem",
           }}
         />
+
+        {standardTasks.length > 0 && (
+          <select
+            onChange={(e) => {
+              const task = standardTasks.find((t) => t.id === e.target.value);
+              if (task) {
+                setTitle(task.title);
+                if (task.projectId) setProjectId(task.projectId);
+                if (task.type) setType(task.type);
+                if (task.priority) setPriority(task.priority);
+
+                const today = new Date().toISOString().split("T")[0];
+
+                // Handle intervals
+                if (task.intervals && task.intervals.length > 0) {
+                  const newIntervals = task.intervals.map((i) => ({
+                    startTime: `${today}T${i.startTime}`,
+                    endTime: `${today}T${i.endTime}`,
+                  }));
+                  setIntervals(newIntervals);
+                } else if (task.startTime && task.endTime) {
+                  // Backward compatibility for dev state
+                  setIntervals([
+                    {
+                      startTime: `${today}T${task.startTime}`,
+                      endTime: `${today}T${task.endTime}`,
+                    },
+                  ]);
+                }
+
+                setIsPastTask(true);
+              }
+            }}
+            style={{
+              width: "100%",
+              height: "36px",
+              padding: "0 0.75rem",
+              borderRadius: "var(--radius-sm)",
+              border: "1px dashed var(--color-accent)",
+              backgroundColor: "transparent",
+              color: "var(--color-accent)",
+              fontSize: "0.9rem",
+              cursor: "pointer",
+            }}
+          >
+            <option value="">Load Standard Task...</option>
+            {standardTasks.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.title}
+              </option>
+            ))}
+          </select>
+        )}
 
         <div style={{ display: "flex", gap: "0.5rem" }}>
           <select
@@ -182,65 +244,123 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
         </div>
 
         {isPastTask && (
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <div style={{ flex: 1 }}>
-              <label
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+          >
+            {intervals.map((interval, index) => (
+              <div
+                key={index}
                 style={{
-                  display: "block",
-                  fontSize: "0.8rem",
-                  marginBottom: "0.25rem",
-                  color: "var(--color-text-secondary)",
+                  display: "flex",
+                  gap: "0.5rem",
+                  alignItems: "flex-end",
                 }}
               >
-                Start Time
-              </label>
-              <input
-                type="datetime-local"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                style={{
-                  width: "100%",
-                  height: "46px",
-                  padding: "0 0.75rem",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--color-bg-tertiary)",
-                  backgroundColor: "var(--color-bg-primary)",
-                  color: "var(--color-text-primary)",
-                }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "0.8rem",
-                  marginBottom: "0.25rem",
-                  color: "var(--color-text-secondary)",
-                }}
-              >
-                End Time
-              </label>
-              <input
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                style={{
-                  width: "100%",
-                  height: "46px",
-                  padding: "0 0.75rem",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--color-bg-tertiary)",
-                  backgroundColor: "var(--color-bg-primary)",
-                  color: "var(--color-text-primary)",
-                }}
-              />
-            </div>
+                <div style={{ flex: 1 }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.8rem",
+                      marginBottom: "0.25rem",
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
+                    Start Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={interval.startTime}
+                    onChange={(e) => {
+                      const newIntervals = [...intervals];
+                      newIntervals[index].startTime = e.target.value;
+                      setIntervals(newIntervals);
+                    }}
+                    style={{
+                      width: "100%",
+                      height: "46px",
+                      padding: "0 0.75rem",
+                      borderRadius: "var(--radius-sm)",
+                      border: "1px solid var(--color-bg-tertiary)",
+                      backgroundColor: "var(--color-bg-primary)",
+                      color: "var(--color-text-primary)",
+                    }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "0.8rem",
+                      marginBottom: "0.25rem",
+                      color: "var(--color-text-secondary)",
+                    }}
+                  >
+                    End Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={interval.endTime}
+                    onChange={(e) => {
+                      const newIntervals = [...intervals];
+                      newIntervals[index].endTime = e.target.value;
+                      setIntervals(newIntervals);
+                    }}
+                    style={{
+                      width: "100%",
+                      height: "46px",
+                      padding: "0 0.75rem",
+                      borderRadius: "var(--radius-sm)",
+                      border: "1px solid var(--color-bg-tertiary)",
+                      backgroundColor: "var(--color-bg-primary)",
+                      color: "var(--color-text-primary)",
+                    }}
+                  />
+                </div>
+                {/* Only allow removing if > 1 or just clear it? Allow adding more rows */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newIntervals = intervals.filter(
+                      (_, i) => i !== index,
+                    );
+                    setIntervals(
+                      newIntervals.length
+                        ? newIntervals
+                        : [{ startTime: "", endTime: "" }],
+                    );
+                  }}
+                  style={{
+                    marginBottom: "0.5rem",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() =>
+                setIntervals([...intervals, { startTime: "", endTime: "" }])
+              }
+              style={{
+                alignSelf: "flex-start",
+                fontSize: "0.85rem",
+                color: "var(--color-accent)",
+                fontWeight: 500,
+              }}
+            >
+              + Add another interval
+            </button>
           </div>
         )}
 
         <button
           type="submit"
-          disabled={!title.trim() || (isPastTask && (!startTime || !endTime))}
+          disabled={
+            !title.trim() ||
+            (isPastTask && !intervals.some((i) => i.startTime && i.endTime))
+          }
           style={{
             backgroundColor: "var(--color-accent)",
             color: "#fff",
@@ -249,7 +369,8 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
             fontWeight: 500,
             marginTop: "0.5rem",
             opacity:
-              !title.trim() || (isPastTask && (!startTime || !endTime))
+              !title.trim() ||
+              (isPastTask && !intervals.some((i) => i.startTime && i.endTime))
                 ? 0.5
                 : 1,
           }}

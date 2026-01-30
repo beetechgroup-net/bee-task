@@ -6,6 +6,7 @@ import { Dashboard } from "./components/Dashboard/Dashboard";
 import { CalendarView } from "./components/Calendar/CalendarView";
 import { SummaryReport } from "./components/Reports/SummaryReport";
 import { ProjectsView } from "./components/Project/ProjectsView";
+import { StandardTasksView } from "./components/StandardTask/StandardTasksView";
 
 function App() {
   const [currentView, setCurrentView] = useState("dashboard");
@@ -20,6 +21,8 @@ function App() {
         return <CalendarView />;
       case "projects":
         return <ProjectsView />;
+      case "standard-tasks":
+        return <StandardTasksView />;
       case "reports":
         return <SummaryReport />;
       default:

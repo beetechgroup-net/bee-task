@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type { Project, Task, TaskType } from "../types";
+import type {
+  Project,
+  Task,
+  TaskType,
+  StandardTask,
+  TaskHistory,
+} from "../types";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 
 interface StoreContextType {
@@ -12,7 +18,7 @@ interface StoreContextType {
     projectId: string,
     type: TaskType,
     priority: "low" | "medium" | "high",
-    initialLog?: { startTime: number; endTime: number },
+    initialLogs?: { startTime: number; endTime: number }[],
   ) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
@@ -23,6 +29,11 @@ interface StoreContextType {
   deleteProject: (id: string) => void;
 
   getTaskDuration: (task: Task) => number;
+
+  standardTasks: StandardTask[];
+  addStandardTask: (task: Omit<StandardTask, "id">) => void;
+  updateStandardTask: (id: string, updates: Partial<StandardTask>) => void;
+  deleteStandardTask: (id: string) => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -40,6 +51,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
   const [projects, setProjects] = useLocalStorage<Project[]>(
     "projects",
     DEFAULT_PROJECTS,
+  );
+  const [standardTasks, setStandardTasks] = useLocalStorage<StandardTask[]>(
+    "standardTasks",
+    [],
   );
 
   const [, setTick] = useState(0);
@@ -59,9 +74,50 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     projectId: string,
     type: string,
     priority: "low" | "medium" | "high",
-    initialLog?: { startTime: number; endTime: number },
+    initialLogs?: { startTime: number; endTime: number }[],
   ) => {
-    const isPastTask = !!initialLog;
+    const isPastTask = !!initialLogs && initialLogs.length > 0;
+
+    // Generate logs
+    const logs =
+      isPastTask && initialLogs
+        ? initialLogs.map((log) => ({
+            id: uuidv4(),
+            startTime: log.startTime,
+            endTime: log.endTime,
+            duration: log.endTime - log.startTime,
+          }))
+        : [];
+
+    // Generate history based on logs
+    const history: TaskHistory[] = [];
+    if (isPastTask && logs.length > 0) {
+      // Create event at first log start
+      history.push({
+        id: uuidv4(),
+        action: "create",
+        timestamp: logs[0].startTime,
+      });
+
+      // Removed unused loop
+
+      // Finish event at last log end
+      const lastLog = logs[logs.length - 1];
+      if (lastLog.endTime) {
+        history.push({
+          id: uuidv4(),
+          action: "finish",
+          timestamp: lastLog.endTime,
+        });
+      }
+    } else {
+      history.push({
+        id: uuidv4(),
+        action: "create",
+        timestamp: Date.now(),
+      });
+    }
+
     const newTask: Task = {
       id: uuidv4(),
       title,
@@ -69,33 +125,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
       type,
       priority,
       status: isPastTask ? "done" : "todo",
-      logs: isPastTask
-        ? [
-            {
-              id: uuidv4(),
-              startTime: initialLog.startTime,
-              endTime: initialLog.endTime,
-              duration: initialLog.endTime - initialLog.startTime,
-            },
-          ]
-        : [],
-      history: [
-        {
-          id: uuidv4(),
-          action: "create",
-          timestamp: isPastTask ? initialLog.startTime : Date.now(),
-        },
-        ...(isPastTask
-          ? [
-              {
-                id: uuidv4(),
-                action: "finish" as const,
-                timestamp: initialLog.endTime,
-              },
-            ]
-          : []),
-      ],
-      createdAt: isPastTask ? initialLog.startTime : Date.now(),
+      logs,
+      history,
+      createdAt: isPastTask && logs.length > 0 ? logs[0].startTime : Date.now(),
     };
     setTasks([...tasks, newTask]);
   };
@@ -207,6 +239,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     }, 0);
   };
 
+  const addStandardTask = (task: Omit<StandardTask, "id">) => {
+    setStandardTasks([...standardTasks, { ...task, id: uuidv4() }]);
+  };
+
+  const updateStandardTask = (id: string, updates: Partial<StandardTask>) => {
+    setStandardTasks(
+      standardTasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
+    );
+  };
+
+  const deleteStandardTask = (id: string) => {
+    setStandardTasks(standardTasks.filter((t) => t.id !== id));
+  };
+
   return (
     <StoreContext.Provider
       value={{
@@ -220,6 +266,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
         updateProject,
         deleteProject,
         getTaskDuration,
+        standardTasks,
+        addStandardTask,
+        updateStandardTask,
+        deleteStandardTask,
       }}
     >
       {children}
