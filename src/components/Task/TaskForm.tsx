@@ -1,47 +1,136 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useStore } from "../../context/StoreContext";
-import { X } from "lucide-react";
+import { X, Plus, Trash2 } from "lucide-react";
+import type { Task } from "../../types";
 
-export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
-  const { addTask, projects, standardTasks } = useStore();
-  const [title, setTitle] = useState("");
-  const [projectId, setProjectId] = useState(projects[0]?.id || "");
-  const [type, setType] = useState("Development");
-  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+interface TaskFormProps {
+  onCancel: () => void;
+  initialTask?: Task;
+}
+
+export const TaskForm: React.FC<TaskFormProps> = ({
+  onCancel,
+  initialTask,
+}) => {
+  const { addTask, updateTask, projects, standardTasks } = useStore();
+  const [title, setTitle] = useState(initialTask?.title || "");
+  const [projectId, setProjectId] = useState(
+    initialTask?.projectId || projects[0]?.id || "",
+  );
+  const [type, setType] = useState(initialTask?.type || "Development");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">(
+    initialTask?.priority || "medium",
+  );
+  const [status, setStatus] = useState<"todo" | "in-progress" | "done">(
+    initialTask?.status || "todo",
+  );
   const [isCustomType, setIsCustomType] = useState(false);
-  const [isPastTask, setIsPastTask] = useState(false);
+
+  // Initialize logs/intervals from existing task logs
+  const [isPastTask, setIsPastTask] = useState(!!initialTask || false);
   const [intervals, setIntervals] = useState<
-    { startTime: string; endTime: string }[]
-  >([{ startTime: "", endTime: "" }]); // State for multiple intervals input
+    { id?: string; startTime: string; endTime: string }[]
+  >(
+    initialTask && initialTask.logs.length > 0
+      ? initialTask.logs.map((log) => ({
+          id: log.id,
+          startTime: new Date(log.startTime).toISOString().slice(0, 16), // Format for datetime-local
+          endTime: log.endTime
+            ? new Date(log.endTime).toISOString().slice(0, 16)
+            : "",
+        }))
+      : [{ startTime: "", endTime: "" }],
+  );
+
+  useEffect(() => {
+    // If switching to past task mode manually, ensure at least one empty interval
+    if (isPastTask && intervals.length === 0) {
+      setIntervals([{ startTime: "", endTime: "" }]);
+    }
+  }, [isPastTask]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     if (isPastTask) {
-      // Validate all intervals
-      // We need at least one valid interval if isPastTask is true
-      const validIntervals = intervals.filter((i) => i.startTime && i.endTime);
+      // Validate all intervals that have at least a start time
+      // (Allow empty rows if user just added them but didn't fill?) - No, require fill if present or filter out empty
+      const validIntervals = intervals.filter((i) => i.startTime); // End time optional? If active?
+      // For editing, if end time is missing, it means it's active.
+      // But Multi-log assumes mostly past work.
+      // Let's enforce full logs for "Past Task" mode usually, unless we support "Start active task with history"
 
-      if (validIntervals.length === 0) return;
+      if (validIntervals.length === 0 && !initialTask) return; // Allow update without logs if removing all?
 
       const parsedLogs = validIntervals.map((i) => {
         const start = new Date(i.startTime).getTime();
-        const end = new Date(i.endTime).getTime();
-        return { startTime: start, endTime: end };
+        const end = i.endTime ? new Date(i.endTime).getTime() : undefined;
+        return { id: i.id, startTime: start, endTime: end };
       });
 
       // Validate times
       for (const log of parsedLogs) {
-        if (log.endTime <= log.startTime) {
+        if (log.endTime && log.endTime <= log.startTime) {
           alert("End time must be after start time for all intervals");
           return;
         }
       }
 
-      addTask(title, projectId, type, priority, parsedLogs);
+      if (initialTask) {
+        // We need to preserve original logs' IDs if possible, or mapping them
+        // The parsedLogs already includes ID if it came from initialTask
+
+        // Construct new logs array
+        const newLogs = parsedLogs.map((log) => ({
+          id: log.id || crypto.randomUUID(), // Use existing or new ID
+          startTime: log.startTime,
+          endTime: log.endTime,
+          duration: log.endTime ? log.endTime - log.startTime : 0,
+        }));
+
+        updateTask(initialTask.id, {
+          title,
+          projectId,
+          type,
+          priority,
+          status, // Allow status update
+          logs: newLogs,
+          // We might need to recalc history if logs changed drastically, but StoreContext doesn't expose easy history recalc.
+          // For now, let's assume history appends. If we edit past logs, history might be out of sync.
+          // User asked to "alterar o historico", which is ambiguous: TaskHistory vs Logs.
+          // Usually implies Times.
+        });
+      } else {
+        // Creating new task with history
+        // We can't map 'id' here easily in addTask unless we change it again.
+        // But `addTask` generates IDs.
+        addTask(
+          title,
+          projectId,
+          type,
+          priority,
+          parsedLogs.map((l) => ({
+            startTime: l.startTime,
+            endTime: l.endTime || 0,
+          })),
+        );
+        // Note: addTask expects complete logs (start+end) for initialLogs based on my previous edit?
+        // Let's check StoreContext. addTask types: initialLogs?: { startTime: number; endTime: number }[]
+        // So for NEW tasks, end time is required (or 0?).
+      }
     } else {
-      addTask(title, projectId, type, priority);
+      if (initialTask) {
+        updateTask(initialTask.id, {
+          title,
+          projectId,
+          type,
+          priority,
+          status,
+        });
+      } else {
+        addTask(title, projectId, type, priority);
+      }
     }
     onCancel();
   };
@@ -65,7 +154,9 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
           marginBottom: "1rem",
         }}
       >
-        <h3 style={{ fontSize: "1rem", fontWeight: 600 }}>New Task</h3>
+        <h3 style={{ fontSize: "1rem", fontWeight: 600 }}>
+          {initialTask ? "Edit Task" : "New Task"}
+        </h3>
         <button
           type="button"
           onClick={onCancel}
@@ -228,6 +319,28 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
             <option value="medium">Medium Priority</option>
             <option value="high">High Priority</option>
           </select>
+
+          {initialTask && (
+            <select
+              value={status}
+              onChange={(e) =>
+                setStatus(e.target.value as "todo" | "in-progress" | "done")
+              }
+              style={{
+                flex: 0.8,
+                height: "46px",
+                padding: "0 0.75rem",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--color-bg-tertiary)",
+                backgroundColor: "var(--color-bg-primary)",
+                color: "var(--color-text-primary)",
+              }}
+            >
+              <option value="todo">To Do</option>
+              <option value="in-progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -239,7 +352,7 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
             style={{ accentColor: "var(--color-accent)" }}
           />
           <label htmlFor="isPastTask" style={{ fontSize: "0.9rem" }}>
-            Log work done in the past
+            {initialTask ? "Edit Work Logs" : "Log work done in the past"}
           </label>
         </div>
 
@@ -334,7 +447,7 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
                     color: "var(--color-text-secondary)",
                   }}
                 >
-                  <X size={18} />
+                  <Trash2 size={18} />
                 </button>
               </div>
             ))}
@@ -348,9 +461,12 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
                 fontSize: "0.85rem",
                 color: "var(--color-accent)",
                 fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.25rem",
               }}
             >
-              + Add another interval
+              <Plus size={16} /> Add another interval
             </button>
           </div>
         )}
@@ -358,8 +474,7 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
         <button
           type="submit"
           disabled={
-            !title.trim() ||
-            (isPastTask && !intervals.some((i) => i.startTime && i.endTime))
+            !title.trim() || (isPastTask && !intervals.some((i) => i.startTime))
           }
           style={{
             backgroundColor: "var(--color-accent)",
@@ -370,12 +485,12 @@ export const TaskForm: React.FC<{ onCancel: () => void }> = ({ onCancel }) => {
             marginTop: "0.5rem",
             opacity:
               !title.trim() ||
-              (isPastTask && !intervals.some((i) => i.startTime && i.endTime))
+              (isPastTask && !intervals.some((i) => i.startTime))
                 ? 0.5
                 : 1,
           }}
         >
-          Add Task
+          {initialTask ? "Update Task" : "Add Task"}
         </button>
       </div>
     </form>

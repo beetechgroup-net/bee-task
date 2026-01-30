@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 export const TasksView: React.FC = () => {
   const { tasks } = useStore();
   const [showForm, setShowForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null); // Type 'Task' but need to import it or use 'any' if lazy. Ideally import.
   const [filter, setFilter] = useState<"all" | "todo" | "done">("all");
 
   const filteredTasks = tasks
@@ -82,7 +83,15 @@ export const TasksView: React.FC = () => {
         ))}
       </div>
 
-      {showForm && <TaskForm onCancel={() => setShowForm(false)} />}
+      {showForm && (
+        <TaskForm
+          onCancel={() => {
+            setShowForm(false);
+            setEditingTask(null);
+          }}
+          initialTask={editingTask}
+        />
+      )}
 
       <div>
         {filteredTasks.length === 0 ? (
@@ -98,7 +107,16 @@ export const TasksView: React.FC = () => {
             <p>No tasks found.</p>
           </div>
         ) : (
-          filteredTasks.map((task) => <TaskCard key={task.id} task={task} />)
+          filteredTasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onEdit={(t) => {
+                setEditingTask(t);
+                setShowForm(true);
+              }}
+            />
+          ))
         )}
       </div>
     </div>

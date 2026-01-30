@@ -1,10 +1,23 @@
 import React from "react";
-import { Play, Pause, Trash2, Clock, Check, RotateCcw } from "lucide-react";
+import {
+  Play,
+  Pause,
+  Trash2,
+  Clock,
+  Check,
+  RotateCcw,
+  Edit2,
+} from "lucide-react";
 import { useStore } from "../../context/StoreContext";
 import type { Task } from "../../types";
 import { formatDuration } from "../../utils/dateUtils";
 
-export const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
+interface TaskCardProps {
+  task: Task;
+  onEdit?: (task: Task) => void;
+}
+
+export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit }) => {
   const { toggleTaskLog, deleteTask, updateTask, getTaskDuration, projects } =
     useStore();
   const [showHistory, setShowHistory] = React.useState(false);
@@ -177,6 +190,22 @@ export const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
             <Check size={18} />
           )}
         </button>
+
+        {onEdit && (
+          <button
+            onClick={() => onEdit(task)}
+            style={{
+              color: "var(--color-text-secondary)",
+              opacity: 0.5,
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.5")}
+            title="Edit"
+          >
+            <Edit2 size={18} />
+          </button>
+        )}
 
         <button
           onClick={() => deleteTask(task.id)}
