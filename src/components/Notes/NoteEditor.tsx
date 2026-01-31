@@ -12,7 +12,11 @@ import {
   ListOrdered,
   CheckSquare,
   Image as ImageIcon,
+  Download,
 } from "lucide-react";
+// @ts-ignore
+import html2pdf from "html2pdf.js";
+import { compressImage } from "../../utils/imageUtils";
 import "./NoteEditor.css"; // We'll need some styles
 
 interface NoteEditorProps {
@@ -23,6 +27,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ noteId }) => {
   const { notes, updateNote } = useNotes();
   const note = notes.find((n) => n.id === noteId);
   const [title, setTitle] = useState(note?.title || "");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -89,10 +94,47 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ noteId }) => {
   };
 
   const addImage = () => {
-    const url = window.prompt("Enter image URL");
-    if (url && editor) {
-      editor.chain().focus().setImage({ src: url }).run();
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && editor) {
+      try {
+        const base64 = await compressImage(file);
+        editor.chain().focus().setImage({ src: base64 }).run();
+      } catch (error) {
+        console.error("Error compressing image:", error);
+        alert("Failed to process image.");
+      }
     }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (!editor) return;
+
+    const element = document.createElement("div");
+    // Clone editor content style for PDF
+    element.innerHTML = editor.getHTML();
+    element.style.padding = "2rem";
+    element.style.fontFamily = "outfit, sans-serif"; // Ensure font matches
+    element.style.color = "#000"; // Enforce black text for PDF likely
+
+    // We might need to append styles manually or use option in html2pdf
+    // Simple approach:
+    const opt = {
+      margin: 1,
+      filename: `${title || "note"}.pdf`,
+      image: { type: "jpeg" as const, quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" as const },
+    };
+
+    html2pdf().set(opt).from(element).save();
   };
 
   if (!editor) {
@@ -203,8 +245,23 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ noteId }) => {
           <button
             onClick={addImage}
             style={{ padding: "0.25rem", color: "#fff" }}
+            title="Insert Image"
           >
             <ImageIcon size={20} />
+          </button>
+          <div
+            style={{
+              width: "1px",
+              backgroundColor: "var(--color-bg-tertiary)",
+              margin: "0 0.5rem",
+            }}
+          />
+          <button
+            onClick={handleExportPDF}
+            style={{ padding: "0.25rem", color: "#fff" }}
+            title="Export PDF"
+          >
+            <Download size={20} />
           </button>
         </div>
       </div>
@@ -212,6 +269,13 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ noteId }) => {
       <div style={{ flex: 1, overflowY: "auto", padding: "2rem" }}>
         <EditorContent editor={editor} className="tiptap-editor" />
       </div>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+        accept="image/*"
+      />
     </div>
   );
 };
