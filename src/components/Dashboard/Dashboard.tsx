@@ -3,6 +3,7 @@ import { DailyStandupView } from "../Reports/DailyStandupView";
 import { SummaryReport } from "../Reports/SummaryReport";
 import { useStore } from "../../context/StoreContext";
 import { TaskCard } from "../Task/TaskCard";
+import { MonthlyCompletedTasks } from "./MonthlyCompletedTasks";
 
 export const Dashboard: React.FC = () => {
   const { tasks } = useStore();
@@ -79,6 +80,8 @@ export const Dashboard: React.FC = () => {
           <SummaryReport />
         </section>
       </div>
+
+      <MonthlyCompletedTasks />
     </div>
   );
 };
