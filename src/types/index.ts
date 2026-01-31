@@ -53,3 +53,19 @@ export interface StandardTask {
   startTime?: string;
   endTime?: string;
 }
+
+export interface Folder {
+  id: string;
+  name: string;
+  parentId?: string; // For nested folders if needed
+  createdAt: number;
+}
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string; // HTML string or JSON string from Tiptap
+  folderId: string;
+  createdAt: number;
+  updatedAt: number;
+}

@@ -40,8 +40,6 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 const DEFAULT_PROJECTS: Project[] = [
   { id: "default", name: "General", color: "#94a3b8" },
-  { id: "proj-1", name: "Frontend", color: "#6366f1" },
-  { id: "proj-2", name: "Backend", color: "#22c55e" },
 ];
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({

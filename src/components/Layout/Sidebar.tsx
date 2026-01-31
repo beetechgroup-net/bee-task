@@ -5,6 +5,7 @@ import {
   Calendar as CalendarIcon,
   Layers,
   ClipboardList,
+  StickyNote,
 } from "lucide-react";
 import classNames from "classnames";
 import { PomodoroTimer } from "../Pomodoro/PomodoroTimer";
@@ -25,6 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "tasks", label: "My Tasks", icon: CheckSquare },
     { id: "projects", label: "Projects", icon: Layers },
     { id: "standard-tasks", label: "Standard Tasks", icon: ClipboardList },
+    { id: "notes", label: "Notes", icon: StickyNote },
     { id: "calendar", label: "Calendar", icon: CalendarIcon },
   ];
 

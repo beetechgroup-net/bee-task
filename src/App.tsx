@@ -7,6 +7,8 @@ import { CalendarView } from "./components/Calendar/CalendarView";
 import { SummaryReport } from "./components/Reports/SummaryReport";
 import { ProjectsView } from "./components/Project/ProjectsView";
 import { StandardTasksView } from "./components/StandardTask/StandardTasksView";
+import { NotesProvider } from "./context/NotesContext";
+import { NotesView } from "./components/Notes/NotesView";
 
 function App() {
   const [currentView, setCurrentView] = useState("dashboard");
@@ -23,6 +25,8 @@ function App() {
         return <ProjectsView />;
       case "standard-tasks":
         return <StandardTasksView />;
+      case "notes":
+        return <NotesView />;
       case "reports":
         return <SummaryReport />;
       default:
@@ -51,9 +55,11 @@ function App() {
 
   return (
     <StoreProvider>
-      <Layout currentView={currentView} onChangeView={setCurrentView}>
-        {renderContent()}
-      </Layout>
+      <NotesProvider>
+        <Layout currentView={currentView} onChangeView={setCurrentView}>
+          {renderContent()}
+        </Layout>
+      </NotesProvider>
     </StoreProvider>
   );
 }
