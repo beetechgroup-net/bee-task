@@ -54,12 +54,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
           gap: "0.75rem",
         }}
       >
-        <div
+        <img
+          src="/logo.png"
+          alt="BeeTask Logo"
           style={{
             width: "32px",
             height: "32px",
-            background: "linear-gradient(135deg, var(--color-accent), #a855f7)",
             borderRadius: "8px",
+            objectFit: "cover",
           }}
         />
         <h1
