@@ -11,6 +11,14 @@ import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useFirestoreSync } from "../hooks/useFirestoreSync";
 import { useAuth } from "./AuthContext";
 
+// Extended window interface for Web Speech API
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
+
 interface StoreContextType {
   tasks: Task[];
   projects: Project[];
