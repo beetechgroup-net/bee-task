@@ -9,9 +9,35 @@ import { ProjectsView } from "./components/Project/ProjectsView";
 import { StandardTasksView } from "./components/StandardTask/StandardTasksView";
 import { NotesProvider } from "./context/NotesContext";
 import { NotesView } from "./components/Notes/NotesView";
+import { AuthProvider } from "./context/AuthContext";
 
-function App() {
+import { useAuth } from "./context/AuthContext";
+import { LoginPage } from "./components/Auth/LoginPage";
+
+function AppContent() {
   const [currentView, setCurrentView] = useState("dashboard");
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "var(--color-bg-primary)",
+          color: "var(--color-text-primary)",
+        }}
+      >
+        Loading...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
 
   const renderContent = () => {
     switch (currentView) {
@@ -54,13 +80,21 @@ function App() {
   };
 
   return (
-    <StoreProvider>
-      <NotesProvider>
-        <Layout currentView={currentView} onChangeView={setCurrentView}>
-          {renderContent()}
-        </Layout>
-      </NotesProvider>
-    </StoreProvider>
+    <Layout currentView={currentView} onChangeView={setCurrentView}>
+      {renderContent()}
+    </Layout>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <StoreProvider>
+        <NotesProvider>
+          <AppContent />
+        </NotesProvider>
+      </StoreProvider>
+    </AuthProvider>
   );
 }
 
