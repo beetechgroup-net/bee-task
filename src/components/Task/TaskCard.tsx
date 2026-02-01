@@ -7,6 +7,7 @@ import {
   Check,
   RotateCcw,
   Edit2,
+  Volume2,
 } from "lucide-react";
 import { useStore } from "../../context/StoreContext";
 import type { Task } from "../../types";
@@ -114,6 +115,27 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit }) => {
             >
               {task.priority || "low"}
             </span>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const textToSpeak = `${task.title}. ${task.description || ""}`;
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                utterance.lang = "pt-BR";
+                window.speechSynthesis.speak(utterance);
+              }}
+              style={{
+                color: "var(--color-text-secondary)",
+                opacity: 0.7,
+                marginLeft: "0.5rem",
+                display: "inline-flex",
+                alignItems: "center",
+                verticalAlign: "middle",
+              }}
+              title="Read aloud"
+            >
+              <Volume2 size={14} />
+            </button>
           </div>
         </div>
 

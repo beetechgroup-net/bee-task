@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useStore } from "../../context/StoreContext";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus, Trash2, Mic, MicOff } from "lucide-react";
 import { format } from "date-fns";
 import type { Task } from "../../types";
+import { useSpeechToText } from "../../hooks/useSpeechToText";
 
 interface TaskFormProps {
   onCancel: () => void;
@@ -15,6 +16,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 }) => {
   const { addTask, updateTask, projects, standardTasks } = useStore();
   const [title, setTitle] = useState(initialTask?.title || "");
+  const [description, setDescription] = useState(
+    initialTask?.description || "",
+  );
   const [projectId, setProjectId] = useState(
     initialTask?.projectId || projects[0]?.id || "",
   );
@@ -26,6 +30,27 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     initialTask?.status || "todo",
   );
   const [isCustomType, setIsCustomType] = useState(false);
+
+  // STT Hooks
+  const sttTitle = useSpeechToText("pt-BR");
+  const sttDescription = useSpeechToText("pt-BR");
+
+  // Sync STT transcripts to inputs
+  useEffect(() => {
+    if (sttTitle.transcript) {
+      setTitle((prev) => prev + (prev ? " " : "") + sttTitle.transcript);
+      sttTitle.resetTranscript();
+    }
+  }, [sttTitle.transcript]);
+
+  useEffect(() => {
+    if (sttDescription.transcript) {
+      setDescription(
+        (prev) => prev + (prev ? " " : "") + sttDescription.transcript,
+      );
+      sttDescription.resetTranscript();
+    }
+  }, [sttDescription.transcript]);
 
   // Initialize logs/intervals from existing task logs
   const [isPastTask, setIsPastTask] = useState(!!initialTask || false);
@@ -92,6 +117,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
         updateTask(initialTask.id, {
           title,
+          description,
           projectId,
           type,
           priority,
@@ -108,6 +134,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         // But `addTask` generates IDs.
         addTask(
           title,
+          description,
           projectId,
           type,
           priority,
@@ -124,13 +151,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       if (initialTask) {
         updateTask(initialTask.id, {
           title,
+          description,
           projectId,
           type,
           priority,
           status,
         });
       } else {
-        addTask(title, projectId, type, priority);
+        addTask(title, description, projectId, type, priority);
       }
     }
     onCancel();
@@ -168,23 +196,99 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        <input
-          autoFocus
-          type="text"
-          placeholder="What needs to be done?"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          style={{
-            width: "100%",
-            height: "46px",
-            padding: "0 0.75rem",
-            borderRadius: "var(--radius-sm)",
-            border: "1px solid var(--color-bg-tertiary)",
-            backgroundColor: "var(--color-bg-primary)",
-            color: "var(--color-text-primary)",
-            fontSize: "1rem",
-          }}
-        />
+        {/* Title Input with Mic */}
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <input
+            autoFocus
+            type="text"
+            placeholder="What needs to be done?"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={{
+              flex: 1,
+              height: "46px",
+              padding: "0 0.75rem",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--color-bg-tertiary)",
+              backgroundColor: "var(--color-bg-primary)",
+              color: "var(--color-text-primary)",
+              fontSize: "1rem",
+            }}
+          />
+          <button
+            type="button"
+            onClick={
+              sttTitle.isListening
+                ? sttTitle.stopListening
+                : sttTitle.startListening
+            }
+            style={{
+              width: "46px",
+              height: "46px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "var(--radius-sm)",
+              backgroundColor: sttTitle.isListening
+                ? "var(--color-danger)"
+                : "var(--color-bg-tertiary)",
+              color: "#fff",
+              transition: "background-color 0.2s",
+            }}
+            title="Speak title"
+          >
+            {sttTitle.isListening ? <MicOff size={20} /> : <Mic size={20} />}
+          </button>
+        </div>
+
+        {/* Description Input with Mic */}
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <textarea
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            style={{
+              flex: 1,
+              minHeight: "80px",
+              padding: "0.75rem",
+              borderRadius: "var(--radius-sm)",
+              border: "1px solid var(--color-bg-tertiary)",
+              backgroundColor: "var(--color-bg-primary)",
+              color: "var(--color-text-primary)",
+              fontSize: "0.9rem",
+              resize: "vertical",
+              fontFamily: "inherit",
+            }}
+          />
+          <button
+            type="button"
+            onClick={
+              sttDescription.isListening
+                ? sttDescription.stopListening
+                : sttDescription.startListening
+            }
+            style={{
+              width: "46px",
+              height: "46px", // Align with top
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "var(--radius-sm)",
+              backgroundColor: sttDescription.isListening
+                ? "var(--color-danger)"
+                : "var(--color-bg-tertiary)",
+              color: "#fff",
+              transition: "background-color 0.2s",
+            }}
+            title="Speak description"
+          >
+            {sttDescription.isListening ? (
+              <MicOff size={20} />
+            ) : (
+              <Mic size={20} />
+            )}
+          </button>
+        </div>
 
         {standardTasks.length > 0 && (
           <select
@@ -192,6 +296,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               const task = standardTasks.find((t) => t.id === e.target.value);
               if (task) {
                 setTitle(task.title);
+                if (task.description) setDescription(task.description);
                 if (task.projectId) setProjectId(task.projectId);
                 if (task.type) setType(task.type);
                 if (task.priority) setPriority(task.priority);
