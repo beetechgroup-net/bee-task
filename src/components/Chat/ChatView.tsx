@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useChat } from "../../hooks/useChat";
-import { Send, Volume2 } from "lucide-react";
+import { Send, Volume2, Mic, MicOff } from "lucide-react";
 
 export const ChatView: React.FC = () => {
   const { messages, sendMessage, user } = useChat();
   const [newMessage, setNewMessage] = useState("");
+  const [isListening, setIsListening] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
   const scrollToBottom = () => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -15,11 +17,67 @@ export const ChatView: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Your browser does not support Speech to Text.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR"; // Set to Portuguese
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event: any) => {
+      let interimTranscript = "";
+      let finalTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+
+      // We append final transcript to existing message
+      if (finalTranscript) {
+        setNewMessage((prev) => prev + (prev ? " " : "") + finalTranscript);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim()) {
       await sendMessage(newMessage);
       setNewMessage("");
+      if (isListening) {
+        recognitionRef.current?.stop();
+        setIsListening(false);
+      }
     }
   };
 
@@ -28,7 +86,7 @@ export const ChatView: React.FC = () => {
       style={{
         display: "flex",
         flexDirection: "column",
-        height: "calc(100vh - 4rem)", // Adjust based on layout padding
+        height: "calc(100vh - 4rem)",
         maxHeight: "800px",
         backgroundColor: "var(--color-bg-secondary)",
         borderRadius: "var(--radius-lg)",
@@ -105,6 +163,7 @@ export const ChatView: React.FC = () => {
                 <button
                   onClick={() => {
                     const utterance = new SpeechSynthesisUtterance(msg.text);
+                    utterance.lang = "pt-BR";
                     window.speechSynthesis.speak(utterance);
                   }}
                   style={{
@@ -143,11 +202,31 @@ export const ChatView: React.FC = () => {
           backgroundColor: "var(--color-bg-secondary)",
         }}
       >
+        <button
+          type="button"
+          onClick={toggleListening}
+          style={{
+            backgroundColor: isListening
+              ? "var(--color-danger)"
+              : "var(--color-bg-tertiary)",
+            color: "#fff",
+            padding: "0.75rem",
+            borderRadius: "var(--radius-md)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "background-color 0.2s",
+          }}
+          title={isListening ? "Stop listening" : "Start dictation"}
+        >
+          {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+        </button>
+
         <input
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type a message..."
+          placeholder={isListening ? "Listening..." : "Type a message..."}
           style={{
             flex: 1,
             padding: "0.75rem",
