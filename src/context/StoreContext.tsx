@@ -25,6 +25,7 @@ interface StoreContextType {
 
   addTask: (
     title: string,
+    description: string,
     projectId: string,
     type: TaskType,
     priority: "low" | "medium" | "high",
@@ -101,8 +102,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const addTask = (
     title: string,
+    description: string,
     projectId: string,
-    type: string,
+    type: TaskType,
     priority: "low" | "medium" | "high",
     initialLogs?: { startTime: number; endTime: number }[],
   ) => {
@@ -151,6 +153,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     const newTask: Task = {
       id: uuidv4(),
       title,
+      description,
       projectId,
       type,
       priority,
