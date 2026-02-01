@@ -239,7 +239,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           </select>
         )}
 
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <select
             value={projectId}
             onChange={(e) => setProjectId(e.target.value)}

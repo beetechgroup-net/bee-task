@@ -61,10 +61,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit }) => {
       }}
     >
       <div
+        className="task-card-content"
         style={{
           display: "flex",
           alignItems: "center",
           gap: "1rem",
+          flexWrap: "wrap",
         }}
       >
         <div style={{ flex: 1 }}>
