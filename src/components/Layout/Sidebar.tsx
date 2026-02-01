@@ -6,6 +6,7 @@ import {
   Layers,
   ClipboardList,
   StickyNote,
+  MessageSquare,
 } from "lucide-react";
 import classNames from "classnames";
 import { PomodoroTimer } from "../Pomodoro/PomodoroTimer";
@@ -28,6 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "tasks", label: "My Tasks", icon: CheckSquare },
     { id: "projects", label: "Projects", icon: Layers },
     { id: "standard-tasks", label: "Standard Tasks", icon: ClipboardList },
+    { id: "chat", label: "Team Chat", icon: MessageSquare },
     { id: "notes", label: "Notes", icon: StickyNote },
     { id: "calendar", label: "Calendar", icon: CalendarIcon },
   ];
