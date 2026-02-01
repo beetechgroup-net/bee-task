@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useChat } from "../../hooks/useChat";
-import { Send } from "lucide-react";
+import { Send, Volume2 } from "lucide-react";
 
 export const ChatView: React.FC = () => {
   const { messages, sendMessage, user } = useChat();
@@ -97,9 +97,34 @@ export const ChatView: React.FC = () => {
                   borderTopLeftRadius: !isOwn ? "0" : "1rem",
                   boxShadow: "var(--shadow-sm)",
                   wordBreak: "break-word",
+                  position: "relative",
                 }}
+                className="message-bubble"
               >
                 {msg.text}
+                <button
+                  onClick={() => {
+                    const utterance = new SpeechSynthesisUtterance(msg.text);
+                    window.speechSynthesis.speak(utterance);
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    right: isOwn ? "100%" : "auto",
+                    left: isOwn ? "auto" : "100%",
+                    margin: "0 0.5rem",
+                    opacity: 0,
+                    transition: "opacity 0.2s",
+                    color: "var(--color-text-secondary)",
+                    cursor: "pointer",
+                    padding: "0.25rem",
+                  }}
+                  className="tts-button"
+                  title="Read aloud"
+                >
+                  <Volume2 size={16} />
+                </button>
               </div>
             </div>
           );
