@@ -8,6 +8,8 @@ import type {
   TaskHistory,
 } from "../types";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useFirestoreSync } from "../hooks/useFirestoreSync";
+import { useAuth } from "./AuthContext";
 
 interface StoreContextType {
   tasks: Task[];
@@ -53,6 +55,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
   const [standardTasks, setStandardTasks] = useLocalStorage<StandardTask[]>(
     "standardTasks",
     [],
+  );
+
+  useEffect(() => {
+    console.log(`[StoreContext] Current tasks state:`, tasks.length, "items");
+    // console.log(tasks);
+  }, [tasks]);
+
+  const { user } = useAuth();
+  // Pass user.uid if available. If not, pass null (disable sync) OR pass a flag to use anonymous?
+  // Current plan: Segregate by user in database.
+  // If user is null, we can opt to NOT sync (local only) or sync to local-ID.
+  // User asked to "separando no banco, cada usuario".
+  // Let's pass user?.uid. If null, hook will handle it (likely not sync).
+
+  // Sync to Firestore
+  useFirestoreSync<Task[]>("tasks", tasks, setTasks, user?.uid);
+  useFirestoreSync<Project[]>("projects", projects, setProjects, user?.uid);
+  useFirestoreSync<StandardTask[]>(
+    "standardTasks",
+    standardTasks,
+    setStandardTasks,
+    user?.uid,
   );
 
   const [, setTick] = useState(0);

@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import classNames from "classnames";
 import { PomodoroTimer } from "../Pomodoro/PomodoroTimer";
+import { useAuth } from "../../context/AuthContext";
+import { LogIn, LogOut, User as UserIcon } from "lucide-react";
 
 interface SidebarProps {
   currentView: string;
@@ -29,6 +31,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "notes", label: "Notes", icon: StickyNote },
     { id: "calendar", label: "Calendar", icon: CalendarIcon },
   ];
+
+  const { user, signInWithGoogle, logout } = useAuth();
 
   return (
     <div
@@ -120,6 +124,115 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <div style={{ marginTop: "auto" }}>
         <PomodoroTimer />
+
+        <div
+          style={{
+            marginTop: "1rem",
+            borderTop: "1px solid var(--color-bg-tertiary)",
+            paddingTop: "1rem",
+          }}
+        >
+          {user ? (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                }}
+              >
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || "User"}
+                    style={{ width: 32, height: 32, borderRadius: "50%" }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      backgroundColor: "var(--color-bg-tertiary)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <UserIcon size={16} />
+                  </div>
+                )}
+                <div style={{ overflow: "hidden" }}>
+                  <div
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {user.displayName}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.7rem",
+                      color: "var(--color-text-secondary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {user.email}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={logout}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.5rem",
+                  borderRadius: "var(--radius-md)",
+                  color: "var(--color-text-secondary)",
+                  width: "100%",
+                  fontSize: "0.85rem",
+                }}
+              >
+                <LogOut size={16} />
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                padding: "0.75rem",
+                borderRadius: "var(--radius-md)",
+                backgroundColor: "var(--color-bg-primary)",
+                border: "1px solid var(--color-bg-tertiary)",
+                color: "var(--color-text-primary)",
+                width: "100%",
+                fontSize: "0.9rem",
+                fontWeight: 500,
+              }}
+            >
+              <LogIn size={18} />
+              Sign in with Google
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
