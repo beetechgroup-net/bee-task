@@ -9,6 +9,7 @@ import { ProjectsView } from "./components/Project/ProjectsView";
 import { StandardTasksView } from "./components/StandardTask/StandardTasksView";
 import { NotesProvider } from "./context/NotesContext";
 import { NotesView } from "./components/Notes/NotesView";
+import { ChatView } from "./components/Chat/ChatView";
 import { AuthProvider } from "./context/AuthContext";
 
 import { useAuth } from "./context/AuthContext";
@@ -53,6 +54,8 @@ function AppContent() {
         return <StandardTasksView />;
       case "notes":
         return <NotesView />;
+      case "chat":
+        return <ChatView />;
       case "reports":
         return <SummaryReport />;
       default:
