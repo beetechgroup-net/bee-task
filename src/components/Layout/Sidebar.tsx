@@ -44,7 +44,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: "blenda-dashboard",
       label: "Dashboard Blenda",
       icon: <Activity size={20} />,
-      restricted: true,
     },
     {
       id: "chat",
@@ -132,9 +131,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           Menu
         </div>
         {menuItems.map((item) => {
-          if (item.restricted && user?.email !== "gabrielufmscc@gmail.com") {
-            return null;
-          }
           const isActive = currentView === item.id;
           return (
             <button
