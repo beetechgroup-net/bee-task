@@ -17,6 +17,20 @@ export const ChatView: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  const formatMessageDate = (createdAt: any) => {
+    if (!createdAt) return "";
+    // Handle Firestore Timestamp or Date object
+    const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
+    if (isNaN(date.getTime())) return "";
+
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  };
+
   const toggleListening = () => {
     if (isListening) {
       recognitionRef.current?.stop();
@@ -185,6 +199,17 @@ export const ChatView: React.FC = () => {
                   <Volume2 size={16} />
                 </button>
               </div>
+              <span
+                style={{
+                  fontSize: "0.65rem",
+                  color: "var(--color-text-tertiary)",
+                  marginTop: "0.2rem",
+                  alignSelf: isOwn ? "flex-end" : "flex-start",
+                  opacity: 0.8,
+                }}
+              >
+                {formatMessageDate(msg.createdAt)}
+              </span>
             </div>
           );
         })}
