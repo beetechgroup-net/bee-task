@@ -4,11 +4,13 @@ import {
   Send,
   Volume2,
   Mic,
+  MicOff,
   User as UserIcon,
   Reply,
   X,
   Paperclip,
   FileText,
+  FileAudio,
 } from "lucide-react";
 import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -83,57 +85,57 @@ export const ChatView: React.FC = () => {
     }).format(date);
   };
 
-  // const toggleListening = () => {
-  //   if (isListening) {
-  //     recognitionRef.current?.stop();
-  //     setIsListening(false);
-  //     return;
-  //   }
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
 
-  //   const SpeechRecognition =
-  //     window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  //   if (!SpeechRecognition) {
-  //     alert("Your browser does not support Speech to Text.");
-  //     return;
-  //   }
+    if (!SpeechRecognition) {
+      alert("Your browser does not support Speech to Text.");
+      return;
+    }
 
-  //   const recognition = new SpeechRecognition();
-  //   recognition.lang = "pt-BR"; // Set to Portuguese
-  //   recognition.continuous = true;
-  //   recognition.interimResults = true;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "pt-BR"; // Set to Portuguese
+    recognition.continuous = true;
+    recognition.interimResults = true;
 
-  //   recognition.onresult = (event: any) => {
-  //     let interimTranscript = "";
-  //     let finalTranscript = "";
+    recognition.onresult = (event: any) => {
+      let interimTranscript = "";
+      let finalTranscript = "";
 
-  //     for (let i = event.resultIndex; i < event.results.length; ++i) {
-  //       if (event.results[i].isFinal) {
-  //         finalTranscript += event.results[i][0].transcript;
-  //       } else {
-  //         interimTranscript += event.results[i][0].transcript;
-  //       }
-  //     }
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
 
-  //     // We append final transcript to existing message
-  //     if (finalTranscript) {
-  //       setNewMessage((prev) => prev + (prev ? " " : "") + finalTranscript);
-  //     }
-  //   };
+      // We append final transcript to existing message
+      if (finalTranscript) {
+        setNewMessage((prev) => prev + (prev ? " " : "") + finalTranscript);
+      }
+    };
 
-  //   recognition.onerror = (event: any) => {
-  //     console.error("Speech recognition error", event.error);
-  //     setIsListening(false);
-  //   };
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
+      setIsListening(false);
+    };
 
-  //   recognition.onend = () => {
-  //     setIsListening(false);
-  //   };
+    recognition.onend = () => {
+      setIsListening(false);
+    };
 
-  //   recognitionRef.current = recognition;
-  //   recognition.start();
-  //   setIsListening(true);
-  // };
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -714,10 +716,10 @@ export const ChatView: React.FC = () => {
           }}
           title="Hold to Record Voice Note"
         >
-          <Mic size={20} />
+          <FileAudio size={20} />
         </button>
 
-        {/* <button
+        <button
           type="button"
           onClick={toggleListening}
           style={{
@@ -735,7 +737,7 @@ export const ChatView: React.FC = () => {
           title={isListening ? "Stop listening" : "Dictate text"}
         >
           {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-        </button> */}
+        </button>
 
         <input
           type="text"
