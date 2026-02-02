@@ -1,16 +1,43 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useChat } from "../../hooks/useChat";
-import { Send, Volume2, Mic, MicOff } from "lucide-react";
-
+import { Send, Volume2, Mic, MicOff, User as UserIcon } from "lucide-react";
+import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
+import { db } from "../../lib/firebase";
 import { useChatContext } from "../../context/ChatContext";
+
+interface OnlineUser {
+  uid: string;
+  displayName: string;
+  photoURL: string;
+  lastSeen: number;
+}
 
 export const ChatView: React.FC = () => {
   const { messages, sendMessage, user } = useChat();
   const { setIsChatOpen } = useChatContext();
   const [newMessage, setNewMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Monitor Online Users
+  useEffect(() => {
+    const q = query(collection(db, "users"), orderBy("lastSeen", "desc"));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const now = Date.now();
+      const threshold = 10 * 60 * 1000; // 10 minutes
+
+      const active = snapshot.docs
+        .map((doc) => ({ uid: doc.id, ...doc.data() }) as OnlineUser)
+        .filter((u) => u.lastSeen && now - u.lastSeen < threshold);
+
+      setOnlineUsers(active);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Mark chat as open immediately
   useEffect(() => {
@@ -123,11 +150,107 @@ export const ChatView: React.FC = () => {
           padding: "1rem",
           borderBottom: "1px solid var(--color-bg-tertiary)",
           backgroundColor: "rgba(15, 23, 42, 0.5)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
         <h2 style={{ fontSize: "1.25rem", fontWeight: 600 }}>
           Global Team Chat
         </h2>
+        <span style={{ fontSize: "0.8rem", color: "var(--color-success)" }}>
+          {onlineUsers.length} Online
+        </span>
+      </div>
+
+      {/* Online Users List */}
+      <div
+        style={{
+          padding: "0.75rem 1rem",
+          borderBottom: "1px solid var(--color-bg-tertiary)",
+          display: "flex",
+          gap: "1rem",
+          overflowX: "auto",
+          backgroundColor: "var(--color-bg-secondary)",
+          minHeight: "85px",
+        }}
+      >
+        {onlineUsers.map((u) => (
+          <div
+            key={u.uid}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              minWidth: "60px",
+            }}
+          >
+            <div style={{ position: "relative" }}>
+              {u.photoURL ? (
+                <img
+                  src={u.photoURL}
+                  alt={u.displayName}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    border: "2px solid var(--color-bg-tertiary)",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    backgroundColor: "var(--color-bg-tertiary)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <UserIcon size={20} />
+                </div>
+              )}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  right: 0,
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  backgroundColor: "var(--color-success)",
+                  border: "2px solid var(--color-bg-secondary)",
+                }}
+              />
+            </div>
+            <span
+              style={{
+                fontSize: "0.7rem",
+                marginTop: "0.25rem",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: "100%",
+              }}
+            >
+              {u.displayName?.split(" ")[0]}
+            </span>
+          </div>
+        ))}
+        {onlineUsers.length === 0 && (
+          <div
+            style={{
+              color: "var(--color-text-tertiary)",
+              fontSize: "0.8rem",
+              fontStyle: "italic",
+              margin: "auto",
+            }}
+          >
+            No one else is online
+          </div>
+        )}
       </div>
 
       {/* Messages Area */}
