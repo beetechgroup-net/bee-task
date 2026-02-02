@@ -25,7 +25,6 @@ export const BlendaDashboard: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [usersData, setUsersData] = useState<UserTaskData[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
 
@@ -34,8 +33,6 @@ export const BlendaDashboard: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const logs: string[] = [];
-        logs.push("Starting data fetch...");
 
         if (user?.uid) {
           try {
@@ -44,23 +41,16 @@ export const BlendaDashboard: React.FC = () => {
             );
             if (projectsSnap.exists()) {
               setProjects(projectsSnap.data().items as Project[]);
-              logs.push(
-                `Fetched ${projectsSnap.data().items.length} projects for admin.`,
-              );
-            } else {
-              logs.push("No projects found for admin.");
             }
           } catch (e: any) {
-            logs.push(`Error fetching projects: ${e.message}`);
+            console.error(`Error fetching projects: ${e.message}`);
           }
         }
 
         const usersRef = collection(db, "users");
-        logs.push("Fetching users collection...");
         let usersSnap;
         try {
           usersSnap = await getDocs(usersRef);
-          logs.push(`Found ${usersSnap.size} user documents.`);
         } catch (e: any) {
           console.error("Error fetching users:", e);
           throw new Error(
@@ -74,7 +64,6 @@ export const BlendaDashboard: React.FC = () => {
           const userData = userDoc.data() as UserData;
           const uid = userDoc.id;
           const safeUserData = { ...userData, uid };
-          logs.push(`Processing user: ${userData.email} (${uid})`);
 
           const tasksDocRef = doc(db, "users", uid, "data", "tasks");
           let tasks: Task[] = [];
@@ -83,12 +72,9 @@ export const BlendaDashboard: React.FC = () => {
             const tasksSnap = await getDoc(tasksDocRef);
             if (tasksSnap.exists()) {
               tasks = tasksSnap.data().items as Task[];
-              logs.push(`- Found ${tasks.length} tasks.`);
-            } else {
-              logs.push("- No tasks document found.");
             }
           } catch (e: any) {
-            logs.push(`- Error fetching tasks: ${e.message}`);
+            console.error(`Error fetching tasks: ${e.message}`);
           }
 
           const sortedTasks = [...tasks].sort((a, b) => {
@@ -128,7 +114,6 @@ export const BlendaDashboard: React.FC = () => {
         );
 
         setUsersData(allUsersData);
-        setDebugInfo(logs);
       } catch (error: any) {
         console.error("Error fetching dashboard data:", error);
         setError(error.message);
@@ -293,27 +278,6 @@ export const BlendaDashboard: React.FC = () => {
           </p>
         </div>
       )}
-
-      {/* Debug Info (Collapsible or just small) */}
-      {import.meta.env.MODE === "development" || true ? ( // Always show for now
-        <div
-          style={{
-            marginBottom: "2rem",
-            padding: "1rem",
-            backgroundColor: "#f1f5f9",
-            borderRadius: "var(--radius-md)",
-            fontSize: "0.8rem",
-            fontFamily: "monospace",
-            maxHeight: "200px",
-            overflowY: "auto",
-          }}
-        >
-          <strong>Debug Logs:</strong>
-          {debugInfo.map((sys, i) => (
-            <div key={i}>{sys}</div>
-          ))}
-        </div>
-      ) : null}
 
       {/* Global Summary Cards */}
       <div
