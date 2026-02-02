@@ -16,6 +16,7 @@ interface UserData {
 interface UserTaskData {
   user: UserData;
   recentTasks: Task[];
+  projects: Project[]; // Added projects here
   totalDurationByProject: Record<string, number>;
   totalDurationByType: Record<string, number>;
   totalDuration: number;
@@ -26,26 +27,13 @@ export const BlendaDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usersData, setUsersData] = useState<UserTaskData[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  // Removed global projects state as it's not sufficient for all users
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-
-        if (user?.uid) {
-          try {
-            const projectsSnap = await getDoc(
-              doc(db, "users", user.uid, "data", "projects"),
-            );
-            if (projectsSnap.exists()) {
-              setProjects(projectsSnap.data().items as Project[]);
-            }
-          } catch (e: any) {
-            console.error(`Error fetching projects: ${e.message}`);
-          }
-        }
 
         const usersRef = collection(db, "users");
         let usersSnap;
@@ -65,16 +53,32 @@ export const BlendaDashboard: React.FC = () => {
           const uid = userDoc.id;
           const safeUserData = { ...userData, uid };
 
+          // Fetch Tasks
           const tasksDocRef = doc(db, "users", uid, "data", "tasks");
           let tasks: Task[] = [];
-
           try {
             const tasksSnap = await getDoc(tasksDocRef);
             if (tasksSnap.exists()) {
               tasks = tasksSnap.data().items as Task[];
             }
           } catch (e: any) {
-            console.error(`Error fetching tasks: ${e.message}`);
+            console.error(
+              `Error fetching tasks for ${safeUserData.email}: ${e.message}`,
+            );
+          }
+
+          // Fetch Projects
+          const projectsDocRef = doc(db, "users", uid, "data", "projects");
+          let userProjects: Project[] = [];
+          try {
+            const projectsSnap = await getDoc(projectsDocRef);
+            if (projectsSnap.exists()) {
+              userProjects = projectsSnap.data().items as Project[];
+            }
+          } catch (e: any) {
+            console.error(
+              `Error fetching projects for ${safeUserData.email}: ${e.message}`,
+            );
           }
 
           const sortedTasks = [...tasks].sort((a, b) => {
@@ -93,6 +97,14 @@ export const BlendaDashboard: React.FC = () => {
             const duration = getTaskDuration(task);
             totalDuration += duration;
 
+            // Use project name as key if possible slightly safer for aggregation across users
+            // if ids are random but names match. But here we stick to IDs for now, or maybe Names?
+            // Issue: Project IDs are likely UUIDs specific to that user.
+            // Aggregating by ID globally won't work if everyone has different IDs for "BeeTask".
+            // Let's aggregate by ID for now as requested by previous logic,
+            // BUT for the "Global Chart" we might need a unified way.
+            // For now, let's just make the "Detail View" work correctly.
+
             totalDurationByProject[task.projectId] =
               (totalDurationByProject[task.projectId] || 0) + duration;
 
@@ -103,6 +115,7 @@ export const BlendaDashboard: React.FC = () => {
           allUsersData.push({
             user: safeUserData,
             recentTasks,
+            projects: userProjects,
             totalDurationByProject,
             totalDurationByType,
             totalDuration,
@@ -214,6 +227,17 @@ export const BlendaDashboard: React.FC = () => {
     (acc, d) => acc + d.totalDuration,
     0,
   );
+
+  // Note: Aggregating by Project ID across users is tricky if IDs are unique per user.
+  // We'll collect all projects from all users to find names for the global chart,
+  // but be aware that different users might have different IDs for the "same" project.
+  // For the purpose of this request (fixing the detail view), this implementation
+  // aggregates by ID. For the chart labels, we will search across ALL users' projects.
+
+  const allProjectsMap = new Map<string, Project>();
+  usersData.forEach((ud) => {
+    ud.projects.forEach((p) => allProjectsMap.set(p.id, p));
+  });
 
   const globalProjectStats = usersData.reduce(
     (acc, d) => {
@@ -369,12 +393,8 @@ export const BlendaDashboard: React.FC = () => {
           <SimpleBarChart
             data={globalProjectStats}
             total={globalTotalDuration}
-            getColor={(id) =>
-              projects.find((p) => p.id === id)?.color || "gray"
-            }
-            getLabel={(id) =>
-              projects.find((p) => p.id === id)?.name || "Unknown"
-            }
+            getColor={(id) => allProjectsMap.get(id)?.color || "gray"}
+            getLabel={(id) => allProjectsMap.get(id)?.name || "Unknown"}
           />
         </div>
         <div
@@ -526,7 +546,7 @@ export const BlendaDashboard: React.FC = () => {
                     }}
                   >
                     {data.recentTasks.map((task) => {
-                      const project = projects.find(
+                      const project = data.projects.find(
                         (p) => p.id === task.projectId,
                       );
                       const isTaskActive = task.status === "in-progress";
