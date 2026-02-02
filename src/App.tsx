@@ -11,6 +11,7 @@ import { StandardTasksView } from "./components/StandardTask/StandardTasksView";
 import { NotesProvider } from "./context/NotesContext";
 import { NotesView } from "./components/Notes/NotesView";
 import { ChatView } from "./components/Chat/ChatView";
+import { SuggestionsView } from "./components/Suggestions/SuggestionsView";
 import { AuthProvider } from "./context/AuthContext";
 import { ChatProvider } from "./context/ChatContext";
 
@@ -62,6 +63,8 @@ function AppContent() {
         return <ChatView />;
       case "reports":
         return <SummaryReport />;
+      case "suggestions":
+        return <SuggestionsView />;
       default:
         // Handle Project views
         if (currentView.startsWith("project-")) {

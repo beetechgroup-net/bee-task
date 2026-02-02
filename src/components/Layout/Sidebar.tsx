@@ -12,6 +12,7 @@ import {
   LogOut,
   User as UserIcon,
   Timer,
+  Lightbulb,
 } from "lucide-react";
 import classNames from "classnames";
 import { PomodoroTimer } from "../Pomodoro/PomodoroTimer";
@@ -60,6 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     { id: "calendar", label: "Calendar", icon: <Calendar size={20} /> },
     { id: "notes", label: "Notes", icon: <StickyNote size={20} /> },
+    { id: "suggestions", label: "Suggestions", icon: <Lightbulb size={20} /> },
   ];
 
   return (
