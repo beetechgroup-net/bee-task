@@ -6,6 +6,8 @@ import {
   onAuthStateChanged,
   type User,
 } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 interface AuthContextType {
   user: User | null;
@@ -45,6 +47,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Error signing out:", error);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      // Update last seen
+      const userRef = doc(db, "users", user.uid);
+      setDoc(
+        userRef,
+        {
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          lastSeen: Date.now(),
+        },
+        { merge: true },
+      );
+
+      // Periodically update last seen
+      const interval = setInterval(
+        () => {
+          setDoc(
+            userRef,
+            {
+              lastSeen: Date.now(),
+            },
+            { merge: true },
+          );
+        },
+        5 * 60 * 1000,
+      ); // Every 5 minutes
+
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   return (
     <AuthContext.Provider value={{ user, loading, signInWithGoogle, logout }}>

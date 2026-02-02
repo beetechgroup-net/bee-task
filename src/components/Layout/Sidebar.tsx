@@ -24,6 +24,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onChangeView,
   isOpen = false,
 }) => {
+  const { user, signInWithGoogle, logout } = useAuth();
+
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "tasks", label: "My Tasks", icon: CheckSquare },
@@ -34,7 +36,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "calendar", label: "Calendar", icon: CalendarIcon },
   ];
 
-  const { user, signInWithGoogle, logout } = useAuth();
+  navItems.unshift({
+    id: "blenda-dashboard",
+    label: "Dashboard Blenda",
+    icon: LayoutDashboard,
+  });
 
   return (
     <div

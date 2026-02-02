@@ -3,6 +3,7 @@ import { StoreProvider } from "./context/StoreContext";
 import { Layout } from "./components/Layout/Layout";
 import { TasksView } from "./components/Task/TasksView";
 import { Dashboard } from "./components/Dashboard/Dashboard";
+import { BlendaDashboard } from "./components/Dashboard/BlendaDashboard";
 import { CalendarView } from "./components/Calendar/CalendarView";
 import { SummaryReport } from "./components/Reports/SummaryReport";
 import { ProjectsView } from "./components/Project/ProjectsView";
@@ -44,6 +45,8 @@ function AppContent() {
     switch (currentView) {
       case "dashboard":
         return <Dashboard />;
+      case "blenda-dashboard":
+        return <BlendaDashboard />;
       case "tasks":
         return <TasksView />;
       case "calendar":
