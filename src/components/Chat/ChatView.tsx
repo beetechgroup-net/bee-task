@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useChat } from "../../hooks/useChat";
-import { Send, Volume2, Mic, MicOff, User as UserIcon } from "lucide-react";
+import { useChat, type ChatMessage } from "../../hooks/useChat";
+import {
+  Send,
+  Volume2,
+  Mic,
+  MicOff,
+  User as UserIcon,
+  Reply,
+  X,
+} from "lucide-react";
 import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useChatContext } from "../../context/ChatContext";
@@ -18,6 +26,7 @@ export const ChatView: React.FC = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -122,8 +131,19 @@ export const ChatView: React.FC = () => {
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newMessage.trim()) {
-      await sendMessage(newMessage);
+      await sendMessage(
+        newMessage,
+        replyingTo
+          ? {
+              id: replyingTo.id,
+              userName: replyingTo.userEmail.split("@")[0],
+              text: replyingTo.text,
+            }
+          : undefined,
+      );
+
       setNewMessage("");
+      setReplyingTo(null);
       if (isListening) {
         recognitionRef.current?.stop();
         setIsListening(false);
@@ -275,6 +295,20 @@ export const ChatView: React.FC = () => {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: isOwn ? "flex-end" : "flex-start",
+                position: "relative",
+                marginBottom: "0.5rem",
+              }}
+              onMouseEnter={(e) => {
+                const btn = e.currentTarget.querySelector(
+                  ".reply-btn",
+                ) as HTMLElement;
+                if (btn) btn.style.opacity = "1";
+              }}
+              onMouseLeave={(e) => {
+                const btn = e.currentTarget.querySelector(
+                  ".reply-btn",
+                ) as HTMLElement;
+                if (btn) btn.style.opacity = "0";
               }}
             >
               {!isOwn && (
@@ -289,46 +323,110 @@ export const ChatView: React.FC = () => {
                   {msg.userEmail.split("@")[0]}
                 </span>
               )}
+
               <div
                 style={{
-                  backgroundColor: isOwn
-                    ? "var(--color-accent)"
-                    : "var(--color-bg-tertiary)",
-                  color: "#fff",
-                  padding: "0.75rem 1rem",
-                  borderRadius: "1rem",
-                  borderTopRightRadius: isOwn ? "0" : "1rem",
-                  borderTopLeftRadius: !isOwn ? "0" : "1rem",
-                  boxShadow: "var(--shadow-sm)",
-                  wordBreak: "break-word",
-                  position: "relative",
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: "0.5rem",
+                  flexDirection: isOwn ? "row-reverse" : "row",
                 }}
-                className="message-bubble"
               >
-                {msg.text}
-                <button
-                  onClick={() => {
-                    const utterance = new SpeechSynthesisUtterance(msg.text);
-                    utterance.lang = "pt-BR";
-                    window.speechSynthesis.speak(utterance);
-                  }}
+                <div
                   style={{
-                    position: "absolute",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    right: isOwn ? "100%" : "auto",
-                    left: isOwn ? "auto" : "100%",
-                    margin: "0 0.5rem",
+                    backgroundColor: isOwn
+                      ? "var(--color-accent)"
+                      : "var(--color-bg-tertiary)",
+                    color: "#fff",
+                    padding: "0.75rem 1rem",
+                    borderRadius: "1rem",
+                    borderTopRightRadius: isOwn ? "0" : "1rem",
+                    borderTopLeftRadius: !isOwn ? "0" : "1rem",
+                    boxShadow: "var(--shadow-sm)",
+                    wordBreak: "break-word",
+                    position: "relative",
+                    minWidth: "120px",
+                  }}
+                  className="message-bubble"
+                >
+                  {/* Quoted Message */}
+                  {msg.replyTo && (
+                    <div
+                      style={{
+                        backgroundColor: "rgba(0,0,0,0.2)",
+                        borderRadius: "0.5rem",
+                        padding: "0.5rem",
+                        marginBottom: "0.5rem",
+                        fontSize: "0.75rem",
+                        borderLeft: "2px solid rgba(255,255,255,0.5)",
+                      }}
+                    >
+                      <div style={{ fontWeight: 600, marginBottom: "0.1rem" }}>
+                        {msg.replyTo.userName}
+                      </div>
+                      <div
+                        style={{
+                          fontStyle: "italic",
+                          opacity: 0.9,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: "200px",
+                        }}
+                      >
+                        {msg.replyTo.text}
+                      </div>
+                    </div>
+                  )}
+
+                  {msg.text}
+                  <button
+                    onClick={() => {
+                      const utterance = new SpeechSynthesisUtterance(msg.text);
+                      utterance.lang = "pt-BR";
+                      window.speechSynthesis.speak(utterance);
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      right: isOwn ? "100%" : "auto",
+                      left: isOwn ? "auto" : "100%",
+                      margin: "0 0.5rem",
+                      opacity: 0,
+                      transition: "opacity 0.2s",
+                      color: "var(--color-text-secondary)",
+                      cursor: "pointer",
+                      padding: "0.25rem",
+                    }}
+                    className="tts-button"
+                    title="Read aloud"
+                  >
+                    <Volume2 size={16} />
+                  </button>
+                </div>
+
+                {/* Reply Button */}
+                <button
+                  className="reply-btn"
+                  onClick={() => setReplyingTo(msg)}
+                  style={{
+                    background: "var(--color-bg-tertiary)",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: "24px",
+                    height: "24px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
                     opacity: 0,
                     transition: "opacity 0.2s",
                     color: "var(--color-text-secondary)",
-                    cursor: "pointer",
-                    padding: "0.25rem",
                   }}
-                  className="tts-button"
-                  title="Read aloud"
+                  title="Reply"
                 >
-                  <Volume2 size={16} />
+                  <Reply size={14} />
                 </button>
               </div>
               <span
@@ -347,6 +445,43 @@ export const ChatView: React.FC = () => {
         })}
         <div ref={endOfMessagesRef} />
       </div>
+
+      {/* Reply Banner */}
+      {replyingTo && (
+        <div
+          style={{
+            padding: "0.5rem 1rem",
+            backgroundColor: "var(--color-bg-tertiary)",
+            borderTop: "1px solid var(--color-bg-tertiary)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            fontSize: "0.85rem",
+          }}
+        >
+          <div>
+            <span style={{ color: "var(--color-text-secondary)" }}>
+              Replying to{" "}
+            </span>
+            <span style={{ fontWeight: 600 }}>
+              {replyingTo.userEmail.split("@")[0]}
+            </span>
+          </div>
+          <button
+            onClick={() => setReplyingTo(null)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--color-text-secondary)",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Input Area */}
       <form

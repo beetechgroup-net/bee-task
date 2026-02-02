@@ -19,6 +19,11 @@ export interface ChatMessage {
   userEmail: string;
   color: string;
   createdAt: any; // Firestore Timestamp
+  replyTo?: {
+    id: string;
+    userName: string;
+    text: string;
+  };
 }
 
 export const useChat = () => {
@@ -48,7 +53,10 @@ export const useChat = () => {
     return () => unsubscribe();
   }, []);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = async (
+    text: string,
+    replyTo?: ChatMessage["replyTo"],
+  ) => {
     if (!user || !text.trim()) return;
 
     try {
@@ -58,6 +66,7 @@ export const useChat = () => {
         userEmail: user.email || "Anonymous",
         color: generateColorFromString(user.email || user.uid),
         createdAt: serverTimestamp(),
+        replyTo: replyTo || null,
       });
     } catch (error) {
       console.error("Error sending message:", error);
