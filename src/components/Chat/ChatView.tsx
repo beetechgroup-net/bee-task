@@ -8,9 +8,6 @@ import {
   User as UserIcon,
   Reply,
   X,
-  Paperclip,
-  FileText,
-  FileAudio,
 } from "lucide-react";
 import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -24,20 +21,14 @@ interface OnlineUser {
 }
 
 export const ChatView: React.FC = () => {
-  const { messages, sendMessage, user, loadMoreMessages, hasMore } = useChat();
+  const { messages, sendMessage, user } = useChat();
   const { setIsChatOpen } = useChatContext();
   const [newMessage, setNewMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
-    null,
-  );
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Monitor Online Users
   useEffect(() => {
@@ -137,63 +128,9 @@ export const ChatView: React.FC = () => {
     setIsListening(true);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        const audioFile = new File([blob], `voice_note_${Date.now()}.webm`, {
-          type: "audio/webm",
-        });
-        setSelectedFile(audioFile);
-        setIsRecording(false);
-        setMediaRecorder(null);
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      recorder.start();
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-    } catch (err) {
-      console.error("Error accessing microphone:", err);
-      alert("Could not access microphone.");
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      mediaRecorder.stop();
-    }
-  };
-
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newMessage.trim() || selectedFile) {
-      let attachmentType: "image" | "video" | "audio" | "document" | undefined =
-        undefined;
-
-      if (selectedFile) {
-        if (selectedFile.type.startsWith("image/")) attachmentType = "image";
-        else if (selectedFile.type.startsWith("audio/"))
-          attachmentType = "audio";
-        else if (selectedFile.type.startsWith("video/"))
-          attachmentType = "video";
-        else attachmentType = "document";
-      }
-
+    if (newMessage.trim()) {
       await sendMessage(
         newMessage,
         replyingTo
@@ -203,14 +140,10 @@ export const ChatView: React.FC = () => {
               text: replyingTo.text,
             }
           : undefined,
-        selectedFile && attachmentType
-          ? { file: selectedFile, type: attachmentType }
-          : undefined,
       );
 
       setNewMessage("");
       setReplyingTo(null);
-      setSelectedFile(null);
       if (isListening) {
         recognitionRef.current?.stop();
         setIsListening(false);
@@ -351,25 +284,6 @@ export const ChatView: React.FC = () => {
           gap: "1rem",
         }}
       >
-        {/* Load More Button */}
-        {hasMore && (
-          <button
-            onClick={loadMoreMessages}
-            style={{
-              alignSelf: "center",
-              background: "none",
-              border: "none",
-              color: "var(--color-accent)",
-              cursor: "pointer",
-              fontSize: "0.85rem",
-              padding: "0.5rem",
-              textDecoration: "underline",
-            }}
-          >
-            Load older messages
-          </button>
-        )}
-
         {messages.map((msg) => {
           const isOwn = msg.userId === user?.uid;
           return (
@@ -465,88 +379,31 @@ export const ChatView: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Attachment Rendering */}
-                  {msg.attachmentUrl && (
-                    <div style={{ marginBottom: "0.5rem" }}>
-                      {msg.attachmentType === "image" && (
-                        <img
-                          src={msg.attachmentUrl}
-                          alt="Attachment"
-                          style={{
-                            maxWidth: "100%",
-                            borderRadius: "0.5rem",
-                            maxHeight: "300px",
-                          }}
-                        />
-                      )}
-                      {msg.attachmentType === "audio" && (
-                        <audio
-                          controls
-                          src={msg.attachmentUrl}
-                          style={{ maxWidth: "100%" }}
-                        />
-                      )}
-                      {msg.attachmentType === "video" && (
-                        <video
-                          controls
-                          src={msg.attachmentUrl}
-                          style={{ maxWidth: "100%", borderRadius: "0.5rem" }}
-                        />
-                      )}
-                      {msg.attachmentType === "document" && (
-                        <a
-                          href={msg.attachmentUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            color: "white",
-                            textDecoration: "underline",
-                            padding: "0.5rem",
-                            backgroundColor: "rgba(0,0,0,0.2)",
-                            borderRadius: "0.5rem",
-                          }}
-                        >
-                          <FileText size={20} />
-                          {msg.attachmentName || "Document"}
-                        </a>
-                      )}
-                    </div>
-                  )}
-
                   {msg.text}
-
-                  {/* TTS Button (only if text exists) */}
-                  {msg.text && (
-                    <button
-                      onClick={() => {
-                        const utterance = new SpeechSynthesisUtterance(
-                          msg.text,
-                        );
-                        utterance.lang = "pt-BR";
-                        window.speechSynthesis.speak(utterance);
-                      }}
-                      style={{
-                        position: "absolute",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        right: isOwn ? "100%" : "auto",
-                        left: isOwn ? "auto" : "100%",
-                        margin: "0 0.5rem",
-                        opacity: 0,
-                        transition: "opacity 0.2s",
-                        color: "var(--color-text-secondary)",
-                        cursor: "pointer",
-                        padding: "0.25rem",
-                      }}
-                      className="tts-button"
-                      title="Read aloud"
-                    >
-                      <Volume2 size={16} />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      const utterance = new SpeechSynthesisUtterance(msg.text);
+                      utterance.lang = "pt-BR";
+                      window.speechSynthesis.speak(utterance);
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      right: isOwn ? "100%" : "auto",
+                      left: isOwn ? "auto" : "100%",
+                      margin: "0 0.5rem",
+                      opacity: 0,
+                      transition: "opacity 0.2s",
+                      color: "var(--color-text-secondary)",
+                      cursor: "pointer",
+                      padding: "0.25rem",
+                    }}
+                    className="tts-button"
+                    title="Read aloud"
+                  >
+                    <Volume2 size={16} />
+                  </button>
                 </div>
 
                 {/* Reply Button */}
@@ -626,39 +483,6 @@ export const ChatView: React.FC = () => {
         </div>
       )}
 
-      {/* File Selection Preview */}
-      {selectedFile && (
-        <div
-          style={{
-            padding: "0.5rem 1rem",
-            backgroundColor: "var(--color-bg-tertiary)",
-            borderTop: "1px solid var(--color-bg-tertiary)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            fontSize: "0.85rem",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Paperclip size={16} />
-            <span>
-              {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-            </span>
-          </div>
-          <button
-            onClick={() => setSelectedFile(null)}
-            style={{
-              border: "none",
-              background: "none",
-              cursor: "pointer",
-              color: "var(--color-text-secondary)",
-            }}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
       {/* Input Area */}
       <form
         onSubmit={handleSend}
@@ -668,57 +492,8 @@ export const ChatView: React.FC = () => {
           display: "flex",
           gap: "0.75rem",
           backgroundColor: "var(--color-bg-secondary)",
-          alignItems: "center",
         }}
       >
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          style={{ display: "none" }}
-        />
-
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            backgroundColor: "var(--color-bg-tertiary)",
-            color: "var(--color-text-secondary)",
-            padding: "0.75rem",
-            borderRadius: "var(--radius-md)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          title="Attach file"
-        >
-          <Paperclip size={20} />
-        </button>
-
-        {/* Voice Note Button */}
-        <button
-          type="button"
-          onMouseDown={startRecording}
-          onMouseUp={stopRecording}
-          onTouchStart={startRecording}
-          onTouchEnd={stopRecording}
-          style={{
-            backgroundColor: isRecording
-              ? "var(--color-danger)"
-              : "var(--color-bg-tertiary)",
-            color: "#fff",
-            padding: "0.75rem",
-            borderRadius: "var(--radius-md)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "background-color 0.2s",
-          }}
-          title="Hold to Record Voice Note"
-        >
-          <FileAudio size={20} />
-        </button>
-
         <button
           type="button"
           onClick={toggleListening}
@@ -734,7 +509,7 @@ export const ChatView: React.FC = () => {
             justifyContent: "center",
             transition: "background-color 0.2s",
           }}
-          title={isListening ? "Stop listening" : "Dictate text"}
+          title={isListening ? "Stop listening" : "Start dictation"}
         >
           {isListening ? <MicOff size={20} /> : <Mic size={20} />}
         </button>
@@ -743,14 +518,7 @@ export const ChatView: React.FC = () => {
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          placeholder={
-            isRecording
-              ? "Recording..."
-              : isListening
-                ? "Listening..."
-                : "Type a message..."
-          }
-          disabled={isRecording}
+          placeholder={isListening ? "Listening..." : "Type a message..."}
           style={{
             flex: 1,
             padding: "0.75rem",
@@ -758,12 +526,11 @@ export const ChatView: React.FC = () => {
             border: "1px solid var(--color-bg-tertiary)",
             backgroundColor: "var(--color-bg-primary)",
             color: "var(--color-text-primary)",
-            opacity: isRecording ? 0.7 : 1,
           }}
         />
         <button
           type="submit"
-          disabled={!newMessage.trim() && !selectedFile}
+          disabled={!newMessage.trim()}
           style={{
             backgroundColor: "var(--color-accent)",
             color: "#fff",
@@ -772,7 +539,7 @@ export const ChatView: React.FC = () => {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            opacity: newMessage.trim() || selectedFile ? 1 : 0.5,
+            opacity: newMessage.trim() ? 1 : 0.5,
           }}
         >
           <Send size={20} />
