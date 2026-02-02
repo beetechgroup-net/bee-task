@@ -107,7 +107,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </h1>
       </div>
 
-      <nav style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+      <nav
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.5rem",
+          flex: 1,
+          overflowY: "auto",
+          minHeight: 0, // Important for nested flex scrolling
+        }}
+      >
         <div
           style={{
             fontSize: "0.75rem",
