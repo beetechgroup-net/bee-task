@@ -12,6 +12,7 @@ import { NotesProvider } from "./context/NotesContext";
 import { NotesView } from "./components/Notes/NotesView";
 import { ChatView } from "./components/Chat/ChatView";
 import { AuthProvider } from "./context/AuthContext";
+import { ChatProvider } from "./context/ChatContext";
 
 import { useAuth } from "./context/AuthContext";
 import { LoginPage } from "./components/Auth/LoginPage";
@@ -97,7 +98,9 @@ function App() {
     <AuthProvider>
       <StoreProvider>
         <NotesProvider>
-          <AppContent />
+          <ChatProvider>
+            <AppContent />
+          </ChatProvider>
         </NotesProvider>
       </StoreProvider>
     </AuthProvider>

@@ -2,45 +2,65 @@ import React from "react";
 import {
   LayoutDashboard,
   CheckSquare,
-  Calendar as CalendarIcon,
-  Layers,
   ClipboardList,
   StickyNote,
   MessageSquare,
+  Activity,
+  FolderKanban,
+  Calendar,
+  BarChart2,
+  LogIn,
+  LogOut,
+  User as UserIcon,
 } from "lucide-react";
 import classNames from "classnames";
 import { PomodoroTimer } from "../Pomodoro/PomodoroTimer";
 import { useAuth } from "../../context/AuthContext";
-import { LogIn, LogOut, User as UserIcon } from "lucide-react";
+import { useChatContext } from "../../context/ChatContext";
 
 interface SidebarProps {
   currentView: string;
   onChangeView: (view: string) => void;
-  isOpen?: boolean;
+  isOpen: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentView,
   onChangeView,
-  isOpen = false,
+  isOpen,
 }) => {
   const { user, signInWithGoogle, logout } = useAuth();
+  const { unreadCount } = useChatContext();
 
-  const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "tasks", label: "My Tasks", icon: CheckSquare },
-    { id: "projects", label: "Projects", icon: Layers },
-    { id: "standard-tasks", label: "Standard Tasks", icon: ClipboardList },
-    { id: "chat", label: "Team Chat", icon: MessageSquare },
-    { id: "notes", label: "Notes", icon: StickyNote },
-    { id: "calendar", label: "Calendar", icon: CalendarIcon },
+  const menuItems = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: <LayoutDashboard size={20} />,
+    },
+    {
+      id: "blenda-dashboard",
+      label: "Dashboard Blenda",
+      icon: <Activity size={20} />,
+      restricted: true,
+    },
+    { id: "projects", label: "Projects", icon: <FolderKanban size={20} /> },
+    { id: "tasks", label: "Team Tasks", icon: <CheckSquare size={20} /> },
+    {
+      id: "standard-tasks",
+      label: "My Tasks",
+      icon: <ClipboardList size={20} />,
+    },
+    { id: "calendar", label: "Calendar", icon: <Calendar size={20} /> },
+    { id: "notes", label: "Notes", icon: <StickyNote size={20} /> },
+    {
+      id: "chat",
+      label: "Team Chat",
+      icon: <MessageSquare size={20} />,
+      badge: unreadCount > 0 ? unreadCount : undefined,
+    },
+    { id: "reports", label: "Summary Report", icon: <BarChart2 size={20} /> },
   ];
-
-  navItems.unshift({
-    id: "blenda-dashboard",
-    label: "Dashboard Blenda",
-    icon: LayoutDashboard,
-  });
 
   return (
     <div
@@ -100,31 +120,53 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           Menu
         </div>
-        {navItems.map((item) => {
+        {menuItems.map((item) => {
+          if (item.restricted && user?.email !== "gabrielufmscc@gmail.com") {
+            return null;
+          }
           const isActive = currentView === item.id;
           return (
             <button
               key={item.id}
               onClick={() => onChangeView(item.id)}
               style={{
+                width: "100%",
                 display: "flex",
                 alignItems: "center",
                 gap: "0.75rem",
                 padding: "0.75rem 1rem",
-                borderRadius: "var(--radius-md)",
                 backgroundColor: isActive
-                  ? "var(--color-accent)"
+                  ? "var(--color-accent-transparent)"
                   : "transparent",
-                color: isActive ? "#fff" : "var(--color-text-secondary)",
-                fontWeight: 500,
-                transition: "all 0.2s ease",
-                textAlign: "left",
-                width: "100%",
-                fontSize: "var(--font-size-base)",
+                color: isActive
+                  ? "var(--color-accent)"
+                  : "var(--color-text-secondary)",
+                border: "none",
+                borderRadius: "var(--radius-md)",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                fontWeight: isActive ? 600 : 500,
+                position: "relative", // Added for badge positioning if needed, though flex handles it
               }}
             >
-              <item.icon size={20} />
-              {item.label}
+              {item.icon}
+              <span style={{ flex: 1, textAlign: "left" }}>{item.label}</span>
+              {item.badge && (
+                <span
+                  style={{
+                    backgroundColor: "var(--color-danger)",
+                    color: "white",
+                    fontSize: "0.7rem",
+                    fontWeight: "bold",
+                    padding: "0.1rem 0.4rem",
+                    borderRadius: "1rem",
+                    minWidth: "1.2rem",
+                    textAlign: "center",
+                  }}
+                >
+                  {item.badge}
+                </span>
+              )}
             </button>
           );
         })}

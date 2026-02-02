@@ -2,12 +2,21 @@ import React, { useState, useRef, useEffect } from "react";
 import { useChat } from "../../hooks/useChat";
 import { Send, Volume2, Mic, MicOff } from "lucide-react";
 
+import { useChatContext } from "../../context/ChatContext";
+
 export const ChatView: React.FC = () => {
   const { messages, sendMessage, user } = useChat();
+  const { setIsChatOpen } = useChatContext();
   const [newMessage, setNewMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Mark chat as open immediately
+  useEffect(() => {
+    setIsChatOpen(true);
+    return () => setIsChatOpen(false);
+  }, []);
 
   const scrollToBottom = () => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
