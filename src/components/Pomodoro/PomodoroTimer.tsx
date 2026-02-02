@@ -22,10 +22,86 @@ export const PomodoroTimer: React.FC = () => {
   const [mode, setMode] = useState<"work" | "break">("work");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  // Persistence Key
+  const STORAGE_KEY = "pomodoro-state-v2";
+
+  // Load state on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem(STORAGE_KEY);
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        // parsed: { mode, isActive, endTimestamp, pausedTimeLeft }
+
+        setMode(parsed.mode || "work");
+
+        if (parsed.isActive && parsed.endTimestamp) {
+          const remaining = Math.ceil(
+            (parsed.endTimestamp - Date.now()) / 1000,
+          );
+          if (remaining > 0) {
+            setTimeLeft(remaining);
+            setIsActive(true);
+          } else {
+            // Timer finished while user was away
+            setIsActive(false);
+            handleTimerComplete(parsed.mode || "work", true);
+          }
+        } else if (parsed.pausedTimeLeft) {
+          setTimeLeft(parsed.pausedTimeLeft);
+          setIsActive(false);
+        } else {
+          // Fallback if no specific state
+          setTimeLeft(
+            (parsed.mode === "work" ? workMinutes : breakMinutes) * 60,
+          );
+        }
+      } catch (e) {
+        console.error("Failed to parse pomodoro state", e);
+      }
+    }
+  }, []); // Run once on mount
+
+  // Helper to save state
+  const saveState = (
+    newIsActive: boolean,
+    newMode: "work" | "break",
+    time: number,
+  ) => {
+    const state = {
+      isActive: newIsActive,
+      mode: newMode,
+      endTimestamp: newIsActive ? Date.now() + time * 1000 : null,
+      pausedTimeLeft: newIsActive ? null : time,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  };
+
   // Update timer when settings change (only if not active to avoid jumping)
   useEffect(() => {
     if (!isActive) {
-      setTimeLeft(mode === "work" ? workMinutes * 60 : breakMinutes * 60);
+      // Only if we haven't started/paused a specific session that is different from default
+      // But simply: if specific pausedTime is set, we might keep it.
+      // For simplicity, if user changes settings while paused, we usually reset or keep?
+      // Current behavior: update.
+      // Let's check if we have a "paused" state that is mid-way.
+      const savedState = localStorage.getItem(STORAGE_KEY);
+      let isMidWay = false;
+      if (savedState) {
+        const parsed = JSON.parse(savedState);
+        if (
+          !parsed.isActive &&
+          parsed.pausedTimeLeft &&
+          parsed.pausedTimeLeft !==
+            (parsed.mode === "work" ? workMinutes : breakMinutes) * 60
+        ) {
+          isMidWay = true;
+        }
+      }
+
+      if (!isMidWay) {
+        setTimeLeft(mode === "work" ? workMinutes * 60 : breakMinutes * 60);
+      }
     }
   }, [workMinutes, breakMinutes, mode, isActive]);
 
@@ -33,37 +109,67 @@ export const PomodoroTimer: React.FC = () => {
     let interval: ReturnType<typeof setInterval> | null = null;
 
     if (isActive && timeLeft > 0) {
+      // Calculate target time once when effect starts/resumes
+      // Retrieve the authoritative endTimestamp from storage first to align with it
+      const savedState = localStorage.getItem(STORAGE_KEY);
+      let targetTime = Date.now() + timeLeft * 1000;
+
+      if (savedState) {
+        try {
+          const parsed = JSON.parse(savedState);
+          if (parsed.isActive && parsed.endTimestamp) {
+            targetTime = parsed.endTimestamp;
+          }
+        } catch (e) {}
+      }
+
       interval = setInterval(() => {
-        setTimeLeft((time) => time - 1);
+        const now = Date.now();
+        const diff = Math.ceil((targetTime - now) / 1000);
+
+        if (diff <= 0) {
+          // Timer might be finished
+          setTimeLeft(0);
+        } else {
+          setTimeLeft(diff);
+        }
       }, 1000);
-    } else if (timeLeft === 0) {
-      // Timer finished
+    } else if (timeLeft === 0 && isActive) {
+      // Only finish if it was active
       setIsActive(false);
-      handleTimerComplete();
+      handleTimerComplete(mode);
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, timeLeft]);
+  }, [isActive, mode]); // Important: Removed timeLeft from dependency to avoid loop reset
 
-  const handleTimerComplete = () => {
-    // Notify user (simple alert for MVP, ideally sound notification)
-    const nextMode = mode === "work" ? "break" : "work";
+  const handleTimerComplete = (
+    currentMode: "work" | "break",
+    fromBackground = false,
+  ) => {
+    const nextMode = currentMode === "work" ? "break" : "work";
     setMode(nextMode);
-    setTimeLeft(nextMode === "work" ? workMinutes * 60 : breakMinutes * 60);
+
+    // We update state for the NEW mode
+    const nextDuration =
+      nextMode === "work" ? workMinutes * 60 : breakMinutes * 60;
+    setTimeLeft(nextDuration);
+    saveState(false, nextMode, nextDuration); // Save as paused at start of next round
 
     // Logic for auto-pausing active tasks when Break starts
-    if (nextMode === "break") {
+    if (nextMode === "break" && !fromBackground) {
       pauseActiveTask();
-      // Maybe play a sound or show browser notification here
-      if (Notification.permission === "granted") {
-        new Notification("BeeTask Pomodoro", { body: "Time for a break!" });
-      }
-    } else {
-      if (Notification.permission === "granted") {
-        new Notification("BeeTask Pomodoro", { body: "Back to work!" });
-      }
+    }
+
+    if (Notification.permission === "granted" && !fromBackground) {
+      new Notification("BeeTask Pomodoro", {
+        body: nextMode === "break" ? "Time for a break!" : "Back to work!",
+      });
+    } else if (fromBackground) {
+      // Did it finish while away? Maybe show a distinct notification or just reset.
+      console.log("Timer finished in background.");
     }
   };
 
@@ -79,12 +185,17 @@ export const PomodoroTimer: React.FC = () => {
     if (!isActive && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
-    setIsActive(!isActive);
+
+    const newIsActive = !isActive;
+    setIsActive(newIsActive);
+    saveState(newIsActive, mode, timeLeft);
   };
 
   const resetTimer = () => {
     setIsActive(false);
-    setTimeLeft(mode === "work" ? workMinutes * 60 : breakMinutes * 60);
+    const resetTime = mode === "work" ? workMinutes * 60 : breakMinutes * 60;
+    setTimeLeft(resetTime);
+    saveState(false, mode, resetTime);
   };
 
   const formatTime = (seconds: number) => {
