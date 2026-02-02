@@ -11,6 +11,7 @@ import {
   LogIn,
   LogOut,
   User as UserIcon,
+  Timer,
 } from "lucide-react";
 import classNames from "classnames";
 import { PomodoroTimer } from "../Pomodoro/PomodoroTimer";
@@ -30,6 +31,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { user, signInWithGoogle, logout } = useAuth();
   const { unreadCount } = useChatContext();
+  const [showPomodoro, setShowPomodoro] = React.useState(false);
 
   const menuItems = [
     {
@@ -180,7 +182,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       <div style={{ marginTop: "auto" }}>
-        <PomodoroTimer />
+        {/* Toggle Pomodoro Button */}
+        <button
+          onClick={() => setShowPomodoro(!showPomodoro)}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            padding: "0.75rem 1rem",
+            backgroundColor: showPomodoro
+              ? "var(--color-accent-transparent)"
+              : "transparent",
+            color: showPomodoro
+              ? "var(--color-accent)"
+              : "var(--color-text-secondary)",
+            border: "none",
+            borderRadius: "var(--radius-md)",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            fontWeight: 500,
+            marginBottom: "0.5rem",
+          }}
+        >
+          <Timer size={20} />
+          <span style={{ flex: 1, textAlign: "left" }}>Pomodoro</span>
+          {!showPomodoro && (
+            <span style={{ fontSize: "0.7rem", opacity: 0.7 }}>Hidden</span>
+          )}
+        </button>
+
+        <div style={{ display: showPomodoro ? "block" : "none" }}>
+          <PomodoroTimer />
+        </div>
 
         <div
           style={{
