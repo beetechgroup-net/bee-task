@@ -54,7 +54,7 @@ export const StandardTaskForm: React.FC<StandardTaskFormProps> = ({
 
     // Validate times
     for (const interval of validIntervals) {
-      if (interval.endTime <= interval.startTime) {
+      if (interval.endTime < interval.startTime) {
         alert("End time must be after start time for all intervals");
         return;
       }

@@ -97,7 +97,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
       // Validate times
       for (const log of parsedLogs) {
-        if (log.endTime && log.endTime <= log.startTime) {
+        if (log.endTime && log.endTime < log.startTime) {
           alert("End time must be after start time for all intervals");
           return;
         }
