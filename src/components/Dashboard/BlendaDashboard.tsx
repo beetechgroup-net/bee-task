@@ -243,7 +243,9 @@ export const BlendaDashboard: React.FC = () => {
     (acc, d) => {
       Object.entries(d.totalDurationByProject).forEach(
         ([projectId, duration]) => {
-          acc[projectId] = (acc[projectId] || 0) + duration;
+          const projectName =
+            allProjectsMap.get(projectId)?.name || "Unknown Project";
+          acc[projectName] = (acc[projectName] || 0) + duration;
         },
       );
       return acc;
@@ -393,8 +395,14 @@ export const BlendaDashboard: React.FC = () => {
           <SimpleBarChart
             data={globalProjectStats}
             total={globalTotalDuration}
-            getColor={(id) => allProjectsMap.get(id)?.color || "gray"}
-            getLabel={(id) => allProjectsMap.get(id)?.name || "Unknown"}
+            getColor={(name) => {
+              // Find any project with this name to get its color
+              for (const p of allProjectsMap.values()) {
+                if (p.name === name) return p.color;
+              }
+              return "gray";
+            }}
+            getLabel={(name) => name}
           />
         </div>
         <div
