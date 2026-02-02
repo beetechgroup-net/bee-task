@@ -43,6 +43,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <Activity size={20} />,
       restricted: true,
     },
+    {
+      id: "chat",
+      label: "Team Chat",
+      icon: <MessageSquare size={20} />,
+      badge: unreadCount > 0 ? unreadCount : undefined,
+    },
     { id: "projects", label: "Projects", icon: <FolderKanban size={20} /> },
     { id: "tasks", label: "My Tasks", icon: <CheckSquare size={20} /> },
     {
@@ -52,12 +58,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     { id: "calendar", label: "Calendar", icon: <Calendar size={20} /> },
     { id: "notes", label: "Notes", icon: <StickyNote size={20} /> },
-    {
-      id: "chat",
-      label: "Team Chat",
-      icon: <MessageSquare size={20} />,
-      badge: unreadCount > 0 ? unreadCount : undefined,
-    },
   ];
 
   return (
