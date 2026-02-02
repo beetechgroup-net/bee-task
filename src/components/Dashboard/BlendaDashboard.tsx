@@ -529,6 +529,8 @@ export const BlendaDashboard: React.FC = () => {
                       const project = projects.find(
                         (p) => p.id === task.projectId,
                       );
+                      const isTaskActive = task.status === "in-progress";
+
                       return (
                         <div
                           key={task.id}
@@ -537,8 +539,30 @@ export const BlendaDashboard: React.FC = () => {
                             padding: "1rem",
                             borderRadius: "var(--radius-md)",
                             borderLeft: `4px solid ${project?.color || "var(--color-text-secondary)"}`,
+                            boxShadow: isTaskActive
+                              ? "0 0 0 2px var(--color-accent)"
+                              : "none",
+                            position: "relative",
                           }}
                         >
+                          {isTaskActive && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: "-8px",
+                                right: "10px",
+                                backgroundColor: "var(--color-accent)",
+                                color: "white",
+                                fontSize: "0.65rem",
+                                fontWeight: "bold",
+                                padding: "2px 8px",
+                                borderRadius: "10px",
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              Running
+                            </div>
+                          )}
                           <div
                             style={{
                               display: "flex",
@@ -573,11 +597,33 @@ export const BlendaDashboard: React.FC = () => {
                           </div>
                           <div
                             style={{
-                              fontSize: "0.85rem",
-                              color: "var(--color-text-secondary)",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              marginTop: "0.5rem",
                             }}
                           >
-                            {task.status} • {task.type}
+                            <div
+                              style={{
+                                fontSize: "0.85rem",
+                                color: "var(--color-text-secondary)",
+                              }}
+                            >
+                              {task.status} • {task.type}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "0.75rem",
+                                color: "var(--color-text-tertiary)",
+                              }}
+                            >
+                              Created:{" "}
+                              {new Date(task.createdAt).toLocaleDateString()}{" "}
+                              {new Date(task.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </div>
                           </div>
                         </div>
                       );
