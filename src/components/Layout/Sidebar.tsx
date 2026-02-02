@@ -8,7 +8,6 @@ import {
   Activity,
   FolderKanban,
   Calendar,
-  BarChart2,
   LogIn,
   LogOut,
   User as UserIcon,
@@ -45,10 +44,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       restricted: true,
     },
     { id: "projects", label: "Projects", icon: <FolderKanban size={20} /> },
-    { id: "tasks", label: "Team Tasks", icon: <CheckSquare size={20} /> },
+    { id: "tasks", label: "My Tasks", icon: <CheckSquare size={20} /> },
     {
       id: "standard-tasks",
-      label: "My Tasks",
+      label: "Standard Tasks",
       icon: <ClipboardList size={20} />,
     },
     { id: "calendar", label: "Calendar", icon: <Calendar size={20} /> },
@@ -59,7 +58,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <MessageSquare size={20} />,
       badge: unreadCount > 0 ? unreadCount : undefined,
     },
-    { id: "reports", label: "Summary Report", icon: <BarChart2 size={20} /> },
   ];
 
   return (
