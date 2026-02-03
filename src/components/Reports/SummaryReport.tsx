@@ -14,8 +14,13 @@ import type { Task } from "../../types";
 
 type TimeRange = "day" | "week" | "month";
 
-export const SummaryReport: React.FC = () => {
-  const { tasks, projects } = useStore();
+export const SummaryReport: React.FC<{ tasks?: Task[]; projects?: any[] }> = ({
+  tasks: propTasks,
+  projects: propProjects,
+}) => {
+  const { tasks: storeTasks, projects: storeProjects } = useStore();
+  const tasks = propTasks || storeTasks;
+  const projects = propProjects || storeProjects;
   const [range, setRange] = useState<TimeRange>("day");
   const [referenceDate] = useState(new Date());
 

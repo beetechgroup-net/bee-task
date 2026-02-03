@@ -22,7 +22,13 @@ interface UserTaskData {
   totalDuration: number;
 }
 
-export const BlendaDashboard: React.FC = () => {
+interface BlendaDashboardProps {
+  onChangeView: (view: string) => void;
+}
+
+export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
+  onChangeView,
+}) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -467,7 +473,13 @@ export const BlendaDashboard: React.FC = () => {
                 }}
               >
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: "1rem" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1rem",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => onChangeView(`person-detail:${data.user.uid}`)}
                 >
                   {data.user.photoURL ? (
                     <img
@@ -486,7 +498,15 @@ export const BlendaDashboard: React.FC = () => {
                     />
                   )}
                   <div>
-                    <h3 style={{ fontSize: "1.2rem", fontWeight: 600 }}>
+                    <h3
+                      style={{
+                        fontSize: "1.2rem",
+                        fontWeight: 600,
+                        textDecoration: "underline",
+                        textDecorationStyle: "dotted",
+                        textDecorationColor: "var(--color-text-secondary)",
+                      }}
+                    >
                       {data.user.displayName || data.user.email}
                     </h3>
                     <div

@@ -4,8 +4,11 @@ import { isToday, isYesterday, formatDuration } from "../../utils/dateUtils";
 import { CheckCircle, Circle, Clock } from "lucide-react";
 import type { Task } from "../../types";
 
-export const DailyStandupView: React.FC = () => {
-  const { tasks, getTaskDuration } = useStore();
+export const DailyStandupView: React.FC<{ tasks?: Task[] }> = ({
+  tasks: propTasks,
+}) => {
+  const { tasks: storeTasks, getTaskDuration } = useStore();
+  const tasks = propTasks || storeTasks;
 
   const workedOnYesterday = (task: Task) => {
     return task.logs.some((log) => isYesterday(log.startTime));

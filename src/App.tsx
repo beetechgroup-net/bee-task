@@ -14,7 +14,7 @@ import { ChatView } from "./components/Chat/ChatView";
 import { SuggestionsView } from "./components/Suggestions/SuggestionsView";
 import { AuthProvider } from "./context/AuthContext";
 import { ChatProvider } from "./context/ChatContext";
-
+import { PersonDetail } from "./components/Dashboard/PersonDetail";
 import { useAuth } from "./context/AuthContext";
 import { LoginPage } from "./components/Auth/LoginPage";
 
@@ -48,7 +48,7 @@ function AppContent() {
       case "dashboard":
         return <Dashboard />;
       case "blenda-dashboard":
-        return <BlendaDashboard />;
+        return <BlendaDashboard onChangeView={setCurrentView} />;
       case "tasks":
         return <TasksView />;
       case "calendar":
@@ -60,12 +60,21 @@ function AppContent() {
       case "notes":
         return <NotesView />;
       case "chat":
-        return <ChatView />;
+        return <ChatView onChangeView={setCurrentView} />;
       case "reports":
         return <SummaryReport />;
       case "suggestions":
         return <SuggestionsView />;
       default:
+        if (currentView.startsWith("person-detail:")) {
+          const uid = currentView.split(":")[1];
+          return (
+            <PersonDetail
+              userId={uid}
+              onBack={() => setCurrentView("blenda-dashboard")}
+            />
+          );
+        }
         // Handle Project views
         if (currentView.startsWith("project-")) {
           return (

@@ -2,10 +2,13 @@ import React, { useMemo } from "react";
 import { format, isSameMonth } from "date-fns";
 import { useStore } from "../../context/StoreContext";
 import { CalendarCheck, Clock } from "lucide-react";
-import type { TaskHistory } from "../../types";
+import type { TaskHistory, Task } from "../../types";
 
-export const MonthlyCompletedTasks: React.FC = () => {
-  const { tasks, getTaskDuration } = useStore();
+export const MonthlyCompletedTasks: React.FC<{ tasks?: Task[] }> = ({
+  tasks: propTasks,
+}) => {
+  const { tasks: storeTasks, getTaskDuration } = useStore();
+  const tasks = propTasks || storeTasks;
 
   const completedTasks = useMemo(() => {
     const now = new Date();

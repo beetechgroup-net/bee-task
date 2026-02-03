@@ -20,7 +20,11 @@ interface OnlineUser {
   lastSeen: number;
 }
 
-export const ChatView: React.FC = () => {
+interface ChatViewProps {
+  onChangeView: (view: string) => void;
+}
+
+export const ChatView: React.FC<ChatViewProps> = ({ onChangeView }) => {
   const { messages, sendMessage, user } = useChat();
   const { setIsChatOpen } = useChatContext();
   const [newMessage, setNewMessage] = useState("");
@@ -203,7 +207,9 @@ export const ChatView: React.FC = () => {
               flexDirection: "column",
               alignItems: "center",
               minWidth: "60px",
+              cursor: "pointer",
             }}
+            onClick={() => onChangeView(`person-detail:${u.uid}`)}
           >
             <div style={{ position: "relative" }}>
               {u.photoURL ? (
@@ -318,7 +324,10 @@ export const ChatView: React.FC = () => {
                     color: msg.color,
                     marginBottom: "0.25rem",
                     fontWeight: 500,
+                    cursor: "pointer",
+                    textDecoration: "underline",
                   }}
+                  onClick={() => onChangeView(`person-detail:${msg.userId}`)}
                 >
                   {msg.userEmail.split("@")[0]}
                 </span>
