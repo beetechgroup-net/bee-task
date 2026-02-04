@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { CompactTaskCard } from "../Task/CompactTaskCard";
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
@@ -132,15 +133,6 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
         return acc + (effectiveEnd - effectiveStart);
       }
       return acc;
-    }, 0);
-  };
-
-  const getTaskDurationTotal = (task: Task) => {
-    return task.logs.reduce((acc, log) => {
-      if (log.endTime) {
-        return acc + log.duration;
-      }
-      return acc + (Date.now() - log.startTime);
     }, 0);
   };
 
@@ -716,115 +708,25 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
                       const project = data.projects.find(
                         (p) => p.id === task.projectId,
                       );
-                      const isTaskActive = task.status === "in-progress";
-
                       return (
-                        <div
+                        <CompactTaskCard
                           key={task.id}
-                          style={{
-                            backgroundColor: "var(--color-bg-primary)",
-                            padding: "1rem",
-                            borderRadius: "var(--radius-md)",
-                            borderLeft: `4px solid ${project?.color || "var(--color-text-secondary)"}`,
-                            boxShadow: isTaskActive
-                              ? "0 0 0 2px var(--color-accent)"
-                              : "none",
-                            position: "relative",
-                          }}
-                        >
-                          {isTaskActive && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: "-8px",
-                                right: "10px",
-                                backgroundColor: "var(--color-accent)",
-                                color: "white",
-                                fontSize: "0.65rem",
-                                fontWeight: "bold",
-                                padding: "2px 8px",
-                                borderRadius: "10px",
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              Running
-                            </div>
-                          )}
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              marginBottom: "0.5rem",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: "0.75rem",
-                                padding: "0.2rem 0.6rem",
-                                borderRadius: "1rem",
-                                backgroundColor: "var(--color-bg-tertiary)",
-                                color: "var(--color-text-secondary)",
-                              }}
-                            >
-                              {project?.name || "Unknown Project"}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: "0.8rem",
-                                color: "var(--color-text-secondary)",
-                              }}
-                            >
-                              {formatDuration(getTaskDurationTotal(task))}
-                            </span>
-                          </div>
-                          <div
-                            style={{ fontWeight: 500, marginBottom: "0.25rem" }}
-                          >
-                            {task.title}
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              marginTop: "0.5rem",
-                            }}
-                          >
-                            <div
-                              style={{
-                                fontSize: "0.85rem",
-                                color: "var(--color-text-secondary)",
-                              }}
-                            >
-                              {task.status} • {task.type}
-                            </div>
-                            <div
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "var(--color-text-tertiary)",
-                              }}
-                            >
-                              Created:{" "}
-                              {new Date(task.createdAt).toLocaleDateString()}{" "}
-                              {new Date(task.createdAt).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </div>
-                          </div>
-                        </div>
+                          task={task}
+                          project={project}
+                        />
                       );
                     })}
                   </div>
                 ) : (
-                  <p
+                  <div
                     style={{
-                      color: "var(--color-text-secondary)",
                       fontStyle: "italic",
+                      color: "var(--color-text-tertiary)",
+                      fontSize: "0.9rem",
                     }}
                   >
-                    No recent activity found.
-                  </p>
+                    No recent tasks found.
+                  </div>
                 )}
               </div>
             </div>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useStore } from "../../context/StoreContext";
 import { TaskCard } from "./TaskCard";
+import { CompactTaskCard } from "./CompactTaskCard";
 import { TaskForm } from "./TaskForm";
 import { Plus } from "lucide-react";
 
@@ -10,8 +11,16 @@ export const TasksView: React.FC = () => {
   const [editingTask, setEditingTask] = useState<any>(null); // Type 'Task' but need to import it or use 'any' if lazy. Ideally import.
   const [filter, setFilter] = useState<"all" | "todo" | "done">("all");
 
+  // Separate the active task from the list if there is one
+  const activeTask = tasks.find(
+    (t) => t.status === "in-progress" || t.logs.some((l) => !l.endTime),
+  );
+
   const filteredTasks = tasks
     .filter((t) => {
+      // Exclude active task from main list if shown above
+      if (activeTask && t.id === activeTask.id) return false;
+
       if (filter === "all") return true;
       if (filter === "todo") return t.status !== "done";
       if (filter === "done") return t.status === "done";
@@ -61,6 +70,35 @@ export const TasksView: React.FC = () => {
           New Task
         </button>
       </div>
+
+      {activeTask && (
+        <div style={{ marginBottom: "2rem" }}>
+          <h3
+            style={{
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              color: "var(--color-text-secondary)",
+              marginBottom: "0.75rem",
+              letterSpacing: "0.05em",
+            }}
+          >
+            Working On Now
+          </h3>
+          <CompactTaskCard
+            task={activeTask}
+            // Need to find project for color
+            project={useStore().projects.find(
+              (p) => p.id === activeTask.projectId,
+            )}
+            onClick={() => {
+              // Maybe scroll to it or open detail? For now just select/edit
+              setEditingTask(activeTask);
+              setShowForm(true);
+            }}
+          />
+        </div>
+      )}
 
       <div style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem" }}>
         {(["all", "todo", "done"] as const).map((f) => (
