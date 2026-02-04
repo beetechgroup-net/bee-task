@@ -22,6 +22,7 @@ interface ChatContextType {
   setIsChatOpen: (isOpen: boolean) => void;
   notificationPermission: NotificationPermission;
   requestNotificationPermission: () => Promise<void>;
+  onlineUsersCount: number;
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -31,6 +32,7 @@ const ChatContext = createContext<ChatContextType>({
   setIsChatOpen: () => {},
   notificationPermission: "default",
   requestNotificationPermission: async () => {},
+  onlineUsersCount: 0,
 });
 
 export const useChatContext = () => useContext(ChatContext);
@@ -154,6 +156,21 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => unsubscribe();
   }, [user, isChatOpen, notificationPermission]);
 
+  // Monitor Online Users (Shared)
+  const [onlineUsers, setOnlineUsers] = useState<number>(0);
+  useEffect(() => {
+    const q = query(collection(db, "users"), orderBy("lastSeen", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const now = Date.now();
+      const threshold = 10 * 60 * 1000; // 10 minutes
+      const activeCount = snapshot.docs
+        .map((doc) => ({ uid: doc.id, ...doc.data() }) as any)
+        .filter((u) => u.lastSeen && now - u.lastSeen < threshold).length;
+      setOnlineUsers(activeCount);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // When chat opens, clear unread
   useEffect(() => {
     if (isChatOpen) {
@@ -174,6 +191,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsChatOpen,
         notificationPermission,
         requestNotificationPermission,
+        onlineUsersCount: onlineUsers,
       }}
     >
       {children}

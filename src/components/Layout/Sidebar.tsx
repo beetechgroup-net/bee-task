@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       className={classNames("sidebar-mobile", { open: isOpen })}
       style={{
         width: "var(--sidebar-width)",
-        height: "100vh",
+        height: "calc(100vh - 36px)",
         backgroundColor: "var(--color-bg-secondary)",
         borderRight: "1px solid var(--color-bg-tertiary)",
         display: "flex",
@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         padding: "1.5rem",
         position: "fixed",
         left: 0,
-        top: 0,
+        top: "36px", // Below Ticker
       }}
     >
       <div

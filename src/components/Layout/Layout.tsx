@@ -22,6 +22,7 @@ export const Layout: React.FC<LayoutProps> = ({
       style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
     >
       <Ticker />
+      <div style={{ height: "36px" }} /> {/* Spacer for fixed Ticker */}
       <div style={{ display: "flex", flex: 1, position: "relative" }}>
         {/* Mobile Menu Button - Adjust top position since Ticker pushes down? 
             Actually if fixed relative to viewport, it stays top. 
@@ -37,7 +38,7 @@ export const Layout: React.FC<LayoutProps> = ({
           onClick={() => setIsSidebarOpen(true)}
           style={{
             position: "fixed",
-            top: "calc(1rem + 32px)", // Adjust for ticker
+            top: "calc(1rem + 36px)", // Adjust for ticker
             right: "1rem",
             zIndex: 40,
             padding: "0.5rem",
@@ -90,7 +91,7 @@ export const Layout: React.FC<LayoutProps> = ({
             flex: 1,
             padding: "2rem",
             backgroundColor: "var(--color-bg-primary)",
-            minHeight: "calc(100vh - 32px)", // Adjust min-height
+            minHeight: "calc(100vh - 36px)", // Adjust min-height
             overflowY: "auto",
             width: "100%", // Ensure it takes full width
           }}

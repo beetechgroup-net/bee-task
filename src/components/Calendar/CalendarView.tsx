@@ -12,7 +12,9 @@ import {
   startOfWeek,
   endOfWeek,
 } from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+
+import { HOLIDAYS_2026 } from "../../utils/holidays";
 
 export const CalendarView: React.FC = () => {
   const { tasks, projects } = useStore();
@@ -34,16 +36,17 @@ export const CalendarView: React.FC = () => {
   });
 
   // Helper to find tasks for a specific date
-  // We check if a task has logs on this date OR was created on this date
   const getTasksForDate = (date: Date) => {
     return tasks.filter((task) => {
-      // Check logs
       const hasLogs = task.logs.some((log) => isSameDay(log.startTime, date));
-      // Check creation date (optional, but good for context)
       const isCreated = isSameDay(task.createdAt, date);
-
       return hasLogs || isCreated;
     });
+  };
+
+  const getHoliday = (date: Date) => {
+    const formattedDate = format(date, "yyyy-MM-dd");
+    return HOLIDAYS_2026.find((h) => h.date === formattedDate);
   };
 
   return (
@@ -138,6 +141,7 @@ export const CalendarView: React.FC = () => {
           const isCurrentMonth = isSameMonth(day, monthStart);
           const isTodayDate = isSameDay(day, new Date());
           const dayTasks = getTasksForDate(day);
+          const holiday = getHoliday(day);
 
           return (
             <div
@@ -157,13 +161,48 @@ export const CalendarView: React.FC = () => {
             >
               <div
                 style={{
-                  textAlign: "right",
-                  fontWeight: isTodayDate ? 700 : 400,
-                  color: isTodayDate ? "var(--color-accent)" : "inherit",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   marginBottom: "0.25rem",
                 }}
               >
-                {format(day, "d")}
+                {/* Holiday Badge (if any) */}
+                {holiday ? (
+                  <div
+                    title={holiday.name}
+                    style={{
+                      backgroundColor: "#fecaca", // red-200
+                      color: "#b91c1c", // red-700
+                      fontSize: "0.65rem",
+                      fontWeight: 700,
+                      padding: "0.1rem 0.4rem",
+                      borderRadius: "9999px",
+                      maxWidth: "70%",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.2rem",
+                    }}
+                  >
+                    <Star size={10} fill="currentColor" />
+                    {holiday.name}
+                  </div>
+                ) : (
+                  <span></span>
+                )}
+
+                <div
+                  style={{
+                    textAlign: "right",
+                    fontWeight: isTodayDate ? 700 : 400,
+                    color: isTodayDate ? "var(--color-accent)" : "inherit",
+                  }}
+                >
+                  {format(day, "d")}
+                </div>
               </div>
 
               <div
