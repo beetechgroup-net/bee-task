@@ -10,22 +10,30 @@ import {
   Volume2,
 } from "lucide-react";
 import { useStore } from "../../context/StoreContext";
-import type { Task } from "../../types";
+import type { Task, Project } from "../../types";
 import { formatDuration } from "../../utils/dateUtils";
 
 interface TaskCardProps {
   task: Task;
   onEdit?: (task: Task) => void;
+  project?: Project;
+  readOnly?: boolean;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({
+  task,
+  onEdit,
+  project: projectOverride,
+  readOnly = false,
+}) => {
   const { toggleTaskLog, deleteTask, updateTask, getTaskDuration, projects } =
     useStore();
   const [showHistory, setShowHistory] = React.useState(false);
 
   const isActive = task.logs.some((l) => !l.endTime);
   const duration = getTaskDuration(task);
-  const project = projects.find((p) => p.id === task.projectId);
+  const project =
+    projectOverride || projects.find((p) => p.id === task.projectId);
 
   const handleToggleStatus = () => {
     const nextStatus = task.status === "done" ? "todo" : "done";
@@ -164,58 +172,68 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit }) => {
           </span>
         </div>
 
-        <button
-          onClick={() => toggleTaskLog(task.id)}
-          style={{
-            backgroundColor: isActive
-              ? "var(--color-bg-tertiary)"
-              : "var(--color-accent)",
-            color: isActive ? "var(--color-text-accent)" : "#fff",
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "all 0.2s",
-          }}
-          title={isActive ? "Pause" : "Start"}
-        >
-          {isActive ? (
-            <Pause size={18} fill="currentColor" />
-          ) : (
-            <Play size={18} fill="currentColor" style={{ marginLeft: "2px" }} />
-          )}
-        </button>
+        {!readOnly && (
+          <>
+            <button
+              onClick={() => toggleTaskLog(task.id)}
+              style={{
+                backgroundColor: isActive
+                  ? "var(--color-bg-tertiary)"
+                  : "var(--color-accent)",
+                color: isActive ? "var(--color-text-accent)" : "#fff",
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.2s",
+              }}
+              title={isActive ? "Pause" : "Start"}
+            >
+              {isActive ? (
+                <Pause size={18} fill="currentColor" />
+              ) : (
+                <Play
+                  size={18}
+                  fill="currentColor"
+                  style={{ marginLeft: "2px" }}
+                />
+              )}
+            </button>
 
-        <button
-          onClick={handleToggleStatus}
-          style={{
-            backgroundColor:
-              task.status === "done"
-                ? "var(--color-bg-tertiary)"
-                : "var(--color-success)",
-            color:
-              task.status === "done" ? "var(--color-text-secondary)" : "#fff",
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "all 0.2s",
-            opacity: task.status === "done" ? 0.7 : 1,
-          }}
-          title={task.status === "done" ? "Reopen task" : "Finish task"}
-        >
-          {task.status === "done" ? (
-            <RotateCcw size={18} />
-          ) : (
-            <Check size={18} />
-          )}
-        </button>
+            <button
+              onClick={handleToggleStatus}
+              style={{
+                backgroundColor:
+                  task.status === "done"
+                    ? "var(--color-bg-tertiary)"
+                    : "var(--color-success)",
+                color:
+                  task.status === "done"
+                    ? "var(--color-text-secondary)"
+                    : "#fff",
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.2s",
+                opacity: task.status === "done" ? 0.7 : 1,
+              }}
+              title={task.status === "done" ? "Reopen task" : "Finish task"}
+            >
+              {task.status === "done" ? (
+                <RotateCcw size={18} />
+              ) : (
+                <Check size={18} />
+              )}
+            </button>
+          </>
+        )}
 
-        {onEdit && (
+        {onEdit && !readOnly && (
           <button
             onClick={() => onEdit(task)}
             style={{
@@ -231,19 +249,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit }) => {
           </button>
         )}
 
-        <button
-          onClick={() => deleteTask(task.id)}
-          style={{
-            color: "var(--color-text-secondary)",
-            opacity: 0.5,
-            transition: "opacity 0.2s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-          onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.5")}
-          title="Delete"
-        >
-          <Trash2 size={18} />
-        </button>
+        {!readOnly && (
+          <button
+            onClick={() => deleteTask(task.id)}
+            style={{
+              color: "var(--color-text-secondary)",
+              opacity: 0.5,
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.5")}
+            title="Delete"
+          >
+            <Trash2 size={18} />
+          </button>
+        )}
       </div>
 
       {task.history && task.history.length > 0 && (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { CompactTaskCard } from "../Task/CompactTaskCard";
+import { TaskCard } from "../Task/TaskCard";
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
@@ -709,10 +709,11 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
                         (p) => p.id === task.projectId,
                       );
                       return (
-                        <CompactTaskCard
+                        <TaskCard
                           key={task.id}
                           task={task}
                           project={project}
+                          readOnly
                         />
                       );
                     })}
