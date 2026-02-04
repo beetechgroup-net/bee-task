@@ -8,6 +8,8 @@ import {
   User as UserIcon,
   Reply,
   X,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -26,7 +28,11 @@ interface ChatViewProps {
 
 export const ChatView: React.FC<ChatViewProps> = ({ onChangeView }) => {
   const { messages, sendMessage, user } = useChat();
-  const { setIsChatOpen } = useChatContext();
+  const {
+    setIsChatOpen,
+    notificationPermission,
+    requestNotificationPermission,
+  } = useChatContext();
   const [newMessage, setNewMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
@@ -179,9 +185,36 @@ export const ChatView: React.FC<ChatViewProps> = ({ onChangeView }) => {
           alignItems: "center",
         }}
       >
-        <h2 style={{ fontSize: "1.25rem", fontWeight: 600 }}>
-          Global Team Chat
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 600 }}>
+            Global Team Chat
+          </h2>
+          <button
+            onClick={requestNotificationPermission}
+            title={
+              notificationPermission === "granted"
+                ? "Notifications Enabled"
+                : "Enable Notifications"
+            }
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color:
+                notificationPermission === "granted"
+                  ? "var(--color-success)"
+                  : "var(--color-text-tertiary)",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            {notificationPermission === "granted" ? (
+              <Bell size={16} />
+            ) : (
+              <BellOff size={16} />
+            )}
+          </button>
+        </div>
         <span style={{ fontSize: "0.8rem", color: "var(--color-success)" }}>
           {onlineUsers.length} Online
         </span>

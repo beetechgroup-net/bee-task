@@ -20,6 +20,8 @@ interface ChatContextType {
   markAsRead: () => void;
   isChatOpen: boolean;
   setIsChatOpen: (isOpen: boolean) => void;
+  notificationPermission: NotificationPermission;
+  requestNotificationPermission: () => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextType>({
@@ -27,6 +29,8 @@ const ChatContext = createContext<ChatContextType>({
   markAsRead: () => {},
   isChatOpen: false,
   setIsChatOpen: () => {},
+  notificationPermission: "default",
+  requestNotificationPermission: async () => {},
 });
 
 export const useChatContext = () => useContext(ChatContext);
@@ -42,6 +46,21 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   const lastMessageIdRef = useRef<string | null>(null);
   // Ref to audio to reuse element
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermission>(
+      typeof Notification !== "undefined" ? Notification.permission : "default",
+    );
+
+  const requestNotificationPermission = async () => {
+    if (typeof Notification === "undefined") return;
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+    }
+  };
 
   useEffect(() => {
     // Basic notification sound (glass ping)
@@ -97,8 +116,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Check if it's from someone else
         if (data.userId !== user.uid) {
-          // If chat is NOT open, increment unread and play sound
-          if (!isChatOpen) {
+          // Logic for sound and notification
+          const shouldNotify = !isChatOpen || document.hidden;
+
+          if (shouldNotify) {
             setUnreadCount((prev) => prev + 1);
             try {
               audioRef.current
@@ -107,13 +128,31 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
             } catch (e) {
               console.error("Audio error", e);
             }
+
+            // Send Push Notification
+            if (
+              notificationPermission === "granted" &&
+              typeof Notification !== "undefined"
+            ) {
+              const notif = new Notification(
+                `New message from ${data.userEmail.split("@")[0]}`,
+                {
+                  body: data.text,
+                  icon: "/favicon.ico", // Attempt to use a default icon if available
+                },
+              );
+              notif.onclick = () => {
+                window.focus();
+                setIsChatOpen(true);
+              };
+            }
           }
         }
       }
     });
 
     return () => unsubscribe();
-  }, [user, isChatOpen]);
+  }, [user, isChatOpen, notificationPermission]);
 
   // When chat opens, clear unread
   useEffect(() => {
@@ -128,7 +167,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <ChatContext.Provider
-      value={{ unreadCount, markAsRead, isChatOpen, setIsChatOpen }}
+      value={{
+        unreadCount,
+        markAsRead,
+        isChatOpen,
+        setIsChatOpen,
+        notificationPermission,
+        requestNotificationPermission,
+      }}
     >
       {children}
     </ChatContext.Provider>
