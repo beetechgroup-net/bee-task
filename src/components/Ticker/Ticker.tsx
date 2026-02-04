@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   Quote,
   PartyPopper,
+  Pause,
+  Play,
 } from "lucide-react";
 import { useStore } from "../../context/StoreContext";
 import { useChatContext } from "../../context/ChatContext";
@@ -43,6 +45,17 @@ export const Ticker: React.FC = () => {
   const { onlineUsersCount } = useChatContext();
   const [items, setItems] = useState<TickerItem[]>([]);
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [isPaused, setIsPaused] = useState(() => {
+    return localStorage.getItem("tickerPaused") === "true";
+  });
+
+  const togglePause = () => {
+    setIsPaused((prev) => {
+      const newState = !prev;
+      localStorage.setItem("tickerPaused", String(newState));
+      return newState;
+    });
+  };
 
   // ... (keeping tasks logic)
 
@@ -353,21 +366,28 @@ export const Ticker: React.FC = () => {
       }}
     >
       <style>{`
-        @keyframes ticker {
+        @keyframes ticker-scroll {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); } 
         }
-        .ticker-track {
+        .ticker-track-active {
             display: flex;
-            animation: ticker 40s linear infinite; /* Faster speed */
-            width: max-content; /* Ensure width is sufficient */
+            width: max-content;
+            animation: ticker-scroll 40s linear infinite;
+            will-change: transform;
         }
-        .ticker-track:hover {
+        .ticker-track-active:hover {
              animation-play-state: paused; 
         }
       `}</style>
 
-      <div className="ticker-track">
+      <div
+        className="ticker-track-active"
+        style={{
+          animationPlayState: isPaused ? "paused" : "running",
+          paddingRight: "40px", // Space for button
+        }}
+      >
         {[0, 1].map((i) => (
           <div key={i} style={{ display: "flex", alignItems: "center" }}>
             {/* Weather First */}
@@ -394,6 +414,34 @@ export const Ticker: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Toggle Button */}
+      <button
+        onClick={togglePause}
+        title={isPaused ? "Play Ticker" : "Pause Ticker"}
+        style={{
+          position: "absolute",
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: "36px",
+          background: "#1f2937",
+          border: "none",
+          borderLeft: "1px solid #374151",
+          color: "#9ca3af",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          zIndex: 10,
+        }}
+      >
+        {isPaused ? (
+          <Play size={14} fill="currentColor" />
+        ) : (
+          <Pause size={14} fill="currentColor" />
+        )}
+      </button>
     </div>
   );
 };
