@@ -20,6 +20,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
+  ThumbsUp,
 } from "lucide-react";
 
 interface Suggestion {
@@ -31,6 +32,8 @@ interface Suggestion {
   userPhotoURL?: string;
   status: "pending" | "completed" | "discarded";
   createdAt: any;
+  votes: number;
+  votedBy: string[]; // List of user IDs who voted
 }
 
 export const SuggestionsView: React.FC = () => {
@@ -81,6 +84,8 @@ export const SuggestionsView: React.FC = () => {
         userEmail: user.email,
         userPhotoURL: user.photoURL,
         status: "pending",
+        votes: 0,
+        votedBy: [],
         createdAt: serverTimestamp(),
       });
       setNewSuggestionText("");
@@ -112,6 +117,28 @@ export const SuggestionsView: React.FC = () => {
       await deleteDoc(doc(db, "suggestions", id));
     } catch (error) {
       console.error("Error deleting suggestion:", error);
+    }
+  };
+
+  const handleVote = async (
+    id: string,
+    currentVotes: number,
+    votedBy: string[],
+  ) => {
+    if (!user) return;
+    const hasVoted = votedBy?.includes(user.uid);
+    const newVotedBy = hasVoted
+      ? votedBy.filter((uid) => uid !== user.uid)
+      : [...(votedBy || []), user.uid];
+    const newVotes = hasVoted ? currentVotes - 1 : currentVotes + 1;
+
+    try {
+      await updateDoc(doc(db, "suggestions", id), {
+        votes: newVotes,
+        votedBy: newVotedBy,
+      });
+    } catch (error) {
+      console.error("Error updating vote:", error);
     }
   };
 
@@ -231,6 +258,7 @@ export const SuggestionsView: React.FC = () => {
             color="var(--color-accent)"
           >
             {suggestions
+              .sort((a, b) => (b.votes || 0) - (a.votes || 0))
               .filter((s) => s.status === "pending" || !s.status)
               .map((item) => (
                 <SuggestionCard
@@ -239,6 +267,7 @@ export const SuggestionsView: React.FC = () => {
                   user={user}
                   onUpdateStatus={handleUpdateStatus}
                   onDelete={handleDelete}
+                  onVote={handleVote}
                   getStatusColor={getStatusColor}
                 />
               ))}
@@ -501,6 +530,7 @@ interface SuggestionCardProps {
   user: any;
   onUpdateStatus: (id: string, status: any) => void;
   onDelete: (id: string) => void;
+  onVote: (id: string, votes: number, votedBy: string[]) => void;
   getStatusColor: (status: string) => string;
 }
 
@@ -509,8 +539,11 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
   user,
   onUpdateStatus,
   onDelete,
+  onVote,
   getStatusColor,
 }) => {
+  const hasVoted = item.votedBy?.includes(user?.uid);
+
   return (
     <div
       style={{
@@ -597,57 +630,87 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
           gap: "0.5rem",
           borderTop: "1px solid var(--color-bg-tertiary)",
           paddingTop: "1rem",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        {item.status === "pending" && (
-          <>
-            <button
-              onClick={() => onUpdateStatus(item.id, "discarded")}
-              title="Discard"
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--color-text-tertiary)",
-                padding: "0.25rem",
-              }}
-            >
-              <XCircle size={20} />
-            </button>
-            <button
-              onClick={() => onUpdateStatus(item.id, "completed")}
-              title="Mark as Completed"
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--color-success)",
-                padding: "0.25rem",
-              }}
-            >
-              <CheckCircle size={20} />
-            </button>
-          </>
-        )}
+        {/* Vote Button */}
+        <button
+          onClick={() => onVote(item.id, item.votes || 0, item.votedBy || [])}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            background: hasVoted ? "rgba(59, 130, 246, 0.1)" : "transparent",
+            border: "1px solid",
+            borderColor: hasVoted
+              ? "var(--color-accent)"
+              : "var(--color-bg-tertiary)",
+            borderRadius: "var(--radius-md)",
+            padding: "0.4rem 0.8rem",
+            cursor: "pointer",
+            color: hasVoted
+              ? "var(--color-accent)"
+              : "var(--color-text-secondary)",
+            transition: "all 0.2s",
+          }}
+        >
+          <ThumbsUp size={16} fill={hasVoted ? "currentColor" : "none"} />
+          <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+            {item.votes || 0}
+          </span>
+        </button>
 
-        {(item.userId === user?.uid ||
-          user?.email === "gabrielufmscc@gmail.com") && (
-          <button
-            onClick={() => onDelete(item.id)}
-            title="Delete"
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--color-danger)",
-              padding: "0.25rem",
-              marginLeft: "0.5rem",
-            }}
-          >
-            <Trash2 size={18} />
-          </button>
-        )}
+        <div style={{ display: "flex", alignItems: "center" }}>
+          {item.status === "pending" && (
+            <>
+              <button
+                onClick={() => onUpdateStatus(item.id, "discarded")}
+                title="Discard"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--color-text-tertiary)",
+                  padding: "0.25rem",
+                }}
+              >
+                <XCircle size={20} />
+              </button>
+              <button
+                onClick={() => onUpdateStatus(item.id, "completed")}
+                title="Mark as Completed"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--color-success)",
+                  padding: "0.25rem",
+                }}
+              >
+                <CheckCircle size={20} />
+              </button>
+            </>
+          )}
+
+          {(item.userId === user?.uid ||
+            user?.email === "gabrielufmscc@gmail.com") && (
+            <button
+              onClick={() => onDelete(item.id)}
+              title="Delete"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--color-danger)",
+                padding: "0.25rem",
+                marginLeft: "0.5rem",
+              }}
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
