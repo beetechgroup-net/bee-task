@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useStore } from "../../context/StoreContext";
 import { TaskCard } from "./TaskCard";
-import { CompactTaskCard } from "./CompactTaskCard";
 import { TaskForm } from "./TaskForm";
 import { Plus } from "lucide-react";
 
@@ -85,15 +84,10 @@ export const TasksView: React.FC = () => {
           >
             Working On Now
           </h3>
-          <CompactTaskCard
+          <TaskCard
             task={activeTask}
-            // Need to find project for color
-            project={useStore().projects.find(
-              (p) => p.id === activeTask.projectId,
-            )}
-            onClick={() => {
-              // Maybe scroll to it or open detail? For now just select/edit
-              setEditingTask(activeTask);
+            onEdit={(t) => {
+              setEditingTask(t);
               setShowForm(true);
             }}
           />
