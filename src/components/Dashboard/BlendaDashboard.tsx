@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { db } from "../../lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
-import type { Task, Project } from "../../types";
-import { formatDistanceToNow } from "date-fns";
+import type { Task, Project, TaskLog } from "../../types";
+import {
+  formatDistanceToNow,
+  startOfMonth,
+  startOfDay,
+  endOfDay,
+} from "date-fns";
 
 interface UserData {
   uid: string;
@@ -15,11 +20,8 @@ interface UserData {
 
 interface UserTaskData {
   user: UserData;
-  recentTasks: Task[];
-  projects: Project[]; // Added projects here
-  totalDurationByProject: Record<string, number>;
-  totalDurationByType: Record<string, number>;
-  totalDuration: number;
+  allTasks: Task[]; // Store all tasks to filter client-side
+  projects: Project[];
 }
 
 interface BlendaDashboardProps {
@@ -33,7 +35,10 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usersData, setUsersData] = useState<UserTaskData[]>([]);
-  // Removed global projects state as it's not sufficient for all users
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
+    start: startOfMonth(new Date()).toISOString().split("T")[0],
+    end: new Date().toISOString().split("T")[0],
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,44 +92,10 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
             );
           }
 
-          const sortedTasks = [...tasks].sort((a, b) => {
-            const lastActivityA = getLastActivity(a);
-            const lastActivityB = getLastActivity(b);
-            return lastActivityB - lastActivityA;
-          });
-
-          const recentTasks = sortedTasks.slice(0, 2);
-
-          const totalDurationByProject: Record<string, number> = {};
-          const totalDurationByType: Record<string, number> = {};
-          let totalDuration = 0;
-
-          tasks.forEach((task) => {
-            const duration = getTaskDuration(task);
-            totalDuration += duration;
-
-            // Use project name as key if possible slightly safer for aggregation across users
-            // if ids are random but names match. But here we stick to IDs for now, or maybe Names?
-            // Issue: Project IDs are likely UUIDs specific to that user.
-            // Aggregating by ID globally won't work if everyone has different IDs for "BeeTask".
-            // Let's aggregate by ID for now as requested by previous logic,
-            // BUT for the "Global Chart" we might need a unified way.
-            // For now, let's just make the "Detail View" work correctly.
-
-            totalDurationByProject[task.projectId] =
-              (totalDurationByProject[task.projectId] || 0) + duration;
-
-            totalDurationByType[task.type] =
-              (totalDurationByType[task.type] || 0) + duration;
-          });
-
           allUsersData.push({
             user: safeUserData,
-            recentTasks,
+            allTasks: tasks,
             projects: userProjects,
-            totalDurationByProject,
-            totalDurationByType,
-            totalDuration,
           });
         }
 
@@ -144,14 +115,27 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
     fetchData();
   }, [user]);
 
-  const getLastActivity = (task: Task) => {
-    if (task.history && task.history.length > 0) {
-      return Math.max(...task.history.map((h) => h.timestamp));
-    }
-    return task.createdAt;
+  const calculateDurationInInterval = (
+    logs: TaskLog[],
+    rangeStart: number,
+    rangeEnd: number,
+  ) => {
+    return logs.reduce((acc, log) => {
+      const logStart = log.startTime;
+      const logEnd = log.endTime || Date.now(); // If running, assume now
+
+      // Check for overlap
+      // Overlap exists if (LogStart < RangeEnd) and (LogEnd > RangeStart)
+      if (logStart < rangeEnd && logEnd > rangeStart) {
+        const effectiveStart = Math.max(logStart, rangeStart);
+        const effectiveEnd = Math.min(logEnd, rangeEnd);
+        return acc + (effectiveEnd - effectiveStart);
+      }
+      return acc;
+    }, 0);
   };
 
-  const getTaskDuration = (task: Task) => {
+  const getTaskDurationTotal = (task: Task) => {
     return task.logs.reduce((acc, log) => {
       if (log.endTime) {
         return acc + log.duration;
@@ -159,6 +143,109 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
       return acc + (Date.now() - log.startTime);
     }, 0);
   };
+
+  const dashboardStats = useMemo(() => {
+    // Fix: Treat inputs as local dates.
+    // "YYYY-MM-DD" -> new Date("YYYY-MM-DD") is UTC.
+    // "YYYY-MM-DD" + "T00:00" -> new Date(...) is Local.
+    const rangeStart = startOfDay(
+      new Date(dateRange.start + "T00:00"),
+    ).getTime();
+    const rangeEnd = endOfDay(new Date(dateRange.end + "T00:00")).getTime();
+
+    const processedUsers = usersData.map((userData) => {
+      const sortedTasks = [...userData.allTasks].sort((a, b) => {
+        const lastActivityA =
+          a.history && a.history.length > 0
+            ? Math.max(...a.history.map((h) => h.timestamp))
+            : a.createdAt;
+        const lastActivityB =
+          b.history && b.history.length > 0
+            ? Math.max(...b.history.map((h) => h.timestamp))
+            : b.createdAt;
+        return lastActivityB - lastActivityA;
+      });
+
+      const recentTasks = sortedTasks.slice(0, 2);
+
+      const totalDurationByProject: Record<string, number> = {};
+      const totalDurationByType: Record<string, number> = {};
+      let totalDuration = 0;
+
+      userData.allTasks.forEach((task) => {
+        const duration = calculateDurationInInterval(
+          task.logs,
+          rangeStart,
+          rangeEnd,
+        );
+
+        if (duration > 0) {
+          totalDuration += duration;
+
+          totalDurationByProject[task.projectId] =
+            (totalDurationByProject[task.projectId] || 0) + duration;
+
+          totalDurationByType[task.type] =
+            (totalDurationByType[task.type] || 0) + duration;
+        }
+      });
+
+      return {
+        ...userData,
+        recentTasks, // Still show most recent tasks regardless of filter? Or filter recent active?
+        // Requirement implies "Filter... to view total time...", usually recent activity is independent.
+        // Keeping recentTasks as "globally recent" but maybe we should show "recent in range"?
+        // Detailed req: "Filtro de intervalo de data para ver o taotal time logged, total time by Project e total time by type"
+        // It didn't explicitly ask to filter the "Recent Activity" list, but "Team Detail" has "Total Worked" which SHOULD be filtered.
+        totalDuration,
+        totalDurationByProject,
+        totalDurationByType,
+      };
+    });
+
+    // Global Aggregations
+    const globalTotalDuration = processedUsers.reduce(
+      (acc, d) => acc + d.totalDuration,
+      0,
+    );
+
+    const allProjectsMap = new Map<string, Project>();
+    processedUsers.forEach((ud) => {
+      ud.projects.forEach((p) => allProjectsMap.set(p.id, p));
+    });
+
+    const globalProjectStats = processedUsers.reduce(
+      (acc, d) => {
+        Object.entries(d.totalDurationByProject).forEach(
+          ([projectId, duration]) => {
+            const projectName =
+              allProjectsMap.get(projectId)?.name || "Unknown Project";
+            acc[projectName] = (acc[projectName] || 0) + duration;
+          },
+        );
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    const globalTypeStats = processedUsers.reduce(
+      (acc, d) => {
+        Object.entries(d.totalDurationByType).forEach(([type, duration]) => {
+          acc[type] = (acc[type] || 0) + duration;
+        });
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    return {
+      processedUsers, // Use this for the list
+      globalTotalDuration,
+      globalProjectStats,
+      globalTypeStats,
+      allProjectsMap,
+    };
+  }, [usersData, dateRange]);
 
   const formatDuration = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
@@ -229,59 +316,102 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
     return <div style={{ padding: "2rem" }}>Loading dashboard data...</div>;
   }
 
-  const globalTotalDuration = usersData.reduce(
-    (acc, d) => acc + d.totalDuration,
-    0,
-  );
-
-  // Note: Aggregating by Project ID across users is tricky if IDs are unique per user.
-  // We'll collect all projects from all users to find names for the global chart,
-  // but be aware that different users might have different IDs for the "same" project.
-  // For the purpose of this request (fixing the detail view), this implementation
-  // aggregates by ID. For the chart labels, we will search across ALL users' projects.
-
-  const allProjectsMap = new Map<string, Project>();
-  usersData.forEach((ud) => {
-    ud.projects.forEach((p) => allProjectsMap.set(p.id, p));
-  });
-
-  const globalProjectStats = usersData.reduce(
-    (acc, d) => {
-      Object.entries(d.totalDurationByProject).forEach(
-        ([projectId, duration]) => {
-          const projectName =
-            allProjectsMap.get(projectId)?.name || "Unknown Project";
-          acc[projectName] = (acc[projectName] || 0) + duration;
-        },
-      );
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-
-  const globalTypeStats = usersData.reduce(
-    (acc, d) => {
-      Object.entries(d.totalDurationByType).forEach(([type, duration]) => {
-        acc[type] = (acc[type] || 0) + duration;
-      });
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-
   return (
     <div
       style={{ maxWidth: "1200px", margin: "0 auto", paddingBottom: "4rem" }}
     >
-      <header style={{ marginBottom: "2rem" }}>
-        <h1
-          style={{ fontSize: "2rem", fontWeight: 700, marginBottom: "0.5rem" }}
+      <header
+        style={{
+          marginBottom: "2rem",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          flexWrap: "wrap",
+          gap: "1rem",
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: "2rem",
+              fontWeight: 700,
+              marginBottom: "0.5rem",
+            }}
+          >
+            Dashboard da Blenda
+          </h1>
+          <p style={{ color: "var(--color-text-secondary)" }}>
+            Overview of team activity and performance.
+          </p>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            backgroundColor: "var(--color-bg-secondary)",
+            padding: "1rem",
+            borderRadius: "var(--radius-md)",
+            alignItems: "center",
+          }}
         >
-          Dashboard da Blenda
-        </h1>
-        <p style={{ color: "var(--color-text-secondary)" }}>
-          Overview of team activity and performance.
-        </p>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+          >
+            <label
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              Start Date
+            </label>
+            <input
+              type="date"
+              value={dateRange.start}
+              onChange={(e) =>
+                setDateRange((prev) => ({ ...prev, start: e.target.value }))
+              }
+              style={{
+                padding: "0.5rem",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--color-bg-tertiary)",
+                backgroundColor: "var(--color-bg-primary)",
+                color: "var(--color-text-primary)",
+                fontSize: "0.9rem",
+              }}
+            />
+          </div>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+          >
+            <label
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              End Date
+            </label>
+            <input
+              type="date"
+              value={dateRange.end}
+              onChange={(e) =>
+                setDateRange((prev) => ({ ...prev, end: e.target.value }))
+              }
+              style={{
+                padding: "0.5rem",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--color-bg-tertiary)",
+                backgroundColor: "var(--color-bg-primary)",
+                color: "var(--color-text-primary)",
+                fontSize: "0.9rem",
+              }}
+            />
+          </div>
+        </div>
       </header>
 
       {error && (
@@ -343,7 +473,16 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
               color: "var(--color-accent)",
             }}
           >
-            {formatDuration(globalTotalDuration)}
+            {formatDuration(dashboardStats.globalTotalDuration)}
+          </div>
+          <div
+            style={{
+              fontSize: "0.8rem",
+              color: "var(--color-text-tertiary)",
+              marginTop: "0.5rem",
+            }}
+          >
+            in selected period
           </div>
         </div>
         <div
@@ -399,11 +538,11 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
             Total Time by Project
           </h3>
           <SimpleBarChart
-            data={globalProjectStats}
-            total={globalTotalDuration}
+            data={dashboardStats.globalProjectStats}
+            total={dashboardStats.globalTotalDuration}
             getColor={(name) => {
               // Find any project with this name to get its color
-              for (const p of allProjectsMap.values()) {
+              for (const p of dashboardStats.allProjectsMap.values()) {
                 if (p.name === name) return p.color;
               }
               return "gray";
@@ -422,8 +561,8 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
             Total Time by Type
           </h3>
           <SimpleBarChart
-            data={globalTypeStats}
-            total={globalTotalDuration}
+            data={dashboardStats.globalTypeStats}
+            total={dashboardStats.globalTotalDuration}
             getColor={(type) => {
               switch (type) {
                 case "Development":
@@ -447,7 +586,7 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
         Team Detail
       </h2>
       <div style={{ display: "grid", gap: "2rem" }}>
-        {usersData.map((data) => {
+        {dashboardStats.processedUsers.map((data) => {
           const isOnline =
             Date.now() - (data.user.lastSeen || 0) < 10 * 60 * 1000; // 10 mins
 
@@ -635,7 +774,7 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
                                 color: "var(--color-text-secondary)",
                               }}
                             >
-                              {formatDuration(getTaskDuration(task))}
+                              {formatDuration(getTaskDurationTotal(task))}
                             </span>
                           </div>
                           <div
