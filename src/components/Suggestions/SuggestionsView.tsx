@@ -290,6 +290,7 @@ export const SuggestionsView: React.FC = () => {
                   user={user}
                   onUpdateStatus={handleUpdateStatus}
                   onDelete={handleDelete}
+                  onVote={handleVote}
                   getStatusColor={getStatusColor}
                 />
               ))}
@@ -312,6 +313,7 @@ export const SuggestionsView: React.FC = () => {
                   user={user}
                   onUpdateStatus={handleUpdateStatus}
                   onDelete={handleDelete}
+                  onVote={handleVote}
                   getStatusColor={getStatusColor}
                 />
               ))}
