@@ -203,6 +203,85 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
+      <div style={{ padding: "0 1rem 1rem 1rem" }}>
+        <div
+          style={{
+            fontSize: "0.65rem",
+            textTransform: "uppercase",
+            color: "var(--color-text-secondary)",
+            marginBottom: "0.5rem",
+            fontWeight: 600,
+            letterSpacing: "0.05em",
+          }}
+        >
+          BeeTech
+        </div>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+        >
+          <a
+            href="https://beexp.beetechgroup.net"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              textDecoration: "none",
+              color: "var(--color-text-secondary)",
+              fontSize: "0.8rem",
+              padding: "0.4rem",
+              borderRadius: "var(--radius-sm)",
+              transition: "background-color 0.2s",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor =
+                "var(--color-bg-tertiary)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
+          >
+            <img
+              src="https://beexp.beetechgroup.net/favicon.ico"
+              alt="BeeXP"
+              style={{ width: "16px", height: "16px" }}
+            />
+            BeeXP
+          </a>
+          <a
+            href="https://beefan.beetechgroup.net"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              textDecoration: "none",
+              color: "var(--color-text-secondary)",
+              fontSize: "0.8rem",
+              padding: "0.4rem",
+              borderRadius: "var(--radius-sm)",
+              transition: "background-color 0.2s",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor =
+                "var(--color-bg-tertiary)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "transparent")
+            }
+          >
+            <img
+              src="https://beefan.beetechgroup.net/favicon.ico"
+              alt="BeeFan"
+              style={{ width: "16px", height: "16px" }}
+            />
+            BeeFan
+          </a>
+        </div>
+      </div>
+
       <div style={{ marginTop: "auto" }}>
         {/* Toggle Pomodoro Button */}
         <button
