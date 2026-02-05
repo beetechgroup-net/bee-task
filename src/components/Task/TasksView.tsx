@@ -10,7 +10,7 @@ export const TasksView: React.FC = () => {
   const { tasks } = useStore();
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<any>(null); // Type 'Task' but need to import it or use 'any' if lazy. Ideally import.
-  const [filter, setFilter] = useState<"all" | "todo" | "done">("all");
+  const [filter, setFilter] = useState<"todo" | "done">("todo");
 
   // Separate the active task from the list if there is one
   const activeTask = getActiveTask(tasks);
@@ -20,7 +20,6 @@ export const TasksView: React.FC = () => {
       // Exclude active task from main list if shown above
       if (activeTask && t.id === activeTask.id) return false;
 
-      if (filter === "all") return true;
       if (filter === "todo") return t.status !== "done";
       if (filter === "done") return t.status === "done";
       return true;
@@ -95,7 +94,7 @@ export const TasksView: React.FC = () => {
       )}
 
       <div style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem" }}>
-        {(["all", "todo", "done"] as const).map((f) => (
+        {(["todo", "done"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
