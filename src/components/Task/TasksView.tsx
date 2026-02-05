@@ -4,6 +4,8 @@ import { TaskCard } from "./TaskCard";
 import { TaskForm } from "./TaskForm";
 import { Plus } from "lucide-react";
 
+import { getActiveTask } from "../../utils/taskLogic";
+
 export const TasksView: React.FC = () => {
   const { tasks } = useStore();
   const [showForm, setShowForm] = useState(false);
@@ -11,9 +13,7 @@ export const TasksView: React.FC = () => {
   const [filter, setFilter] = useState<"all" | "todo" | "done">("all");
 
   // Separate the active task from the list if there is one
-  const activeTask = tasks.find(
-    (t) => t.status === "in-progress" || t.logs.some((l) => !l.endTime),
-  );
+  const activeTask = getActiveTask(tasks);
 
   const filteredTasks = tasks
     .filter((t) => {
