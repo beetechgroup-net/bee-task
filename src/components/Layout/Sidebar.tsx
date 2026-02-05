@@ -360,6 +360,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }}
       >
         <a
+          href="https://www.beetechgroup.net"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="https://www.beetechgroup.net"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0.4rem",
+            borderRadius: "var(--radius-md)",
+            transition: "background-color 0.2s",
+            opacity: 0.7,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--color-bg-tertiary)";
+            e.currentTarget.style.opacity = "1";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+            e.currentTarget.style.opacity = "0.7";
+          }}
+        >
+          <img
+            src="https://www.google.com/s2/favicons?domain=www.beetechgroup.net&sz=64"
+            alt="BeeTech Group"
+            style={{ width: "20px", height: "20px", borderRadius: "4px" }}
+          />
+        </a>
+        <a
           href="https://beexp.beetechgroup.net"
           target="_blank"
           rel="noopener noreferrer"
