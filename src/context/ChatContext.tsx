@@ -21,7 +21,8 @@ interface ChatContextType {
   isChatOpen: boolean;
   setIsChatOpen: (isOpen: boolean) => void;
   notificationPermission: NotificationPermission;
-  requestNotificationPermission: () => Promise<void>;
+  notificationsEnabled: boolean;
+  toggleNotifications: () => Promise<void>;
   onlineUsersCount: number;
 }
 
@@ -31,7 +32,8 @@ const ChatContext = createContext<ChatContextType>({
   isChatOpen: false,
   setIsChatOpen: () => {},
   notificationPermission: "default",
-  requestNotificationPermission: async () => {},
+  notificationsEnabled: false,
+  toggleNotifications: async () => {},
   onlineUsersCount: 0,
 });
 
@@ -54,13 +56,30 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       typeof Notification !== "undefined" ? Notification.permission : "default",
     );
 
-  const requestNotificationPermission = async () => {
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    typeof Notification !== "undefined" &&
+      Notification.permission === "granted",
+  );
+
+  const toggleNotifications = async () => {
     if (typeof Notification === "undefined") return;
-    try {
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-    } catch (error) {
-      console.error("Error requesting notification permission:", error);
+
+    if (notificationPermission === "granted") {
+      // If already granted, just toggle the preference
+      setNotificationsEnabled((prev) => !prev);
+    } else {
+      // If not granted, request permission
+      try {
+        const permission = await Notification.requestPermission();
+        setNotificationPermission(permission);
+        if (permission === "granted") {
+          setNotificationsEnabled(true);
+        } else {
+          setNotificationsEnabled(false);
+        }
+      } catch (error) {
+        console.error("Error requesting notification permission:", error);
+      }
     }
   };
 
@@ -124,15 +143,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
           if (shouldNotify) {
             setUnreadCount((prev) => prev + 1);
             try {
-              audioRef.current
-                ?.play()
-                .catch((e) => console.warn("Audio play failed", e));
+              if (notificationsEnabled) {
+                audioRef.current
+                  ?.play()
+                  .catch((e) => console.warn("Audio play failed", e));
+              }
             } catch (e) {
               console.error("Audio error", e);
             }
 
             // Send Push Notification
             if (
+              notificationsEnabled &&
               notificationPermission === "granted" &&
               typeof Notification !== "undefined"
             ) {
@@ -154,7 +176,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     });
 
     return () => unsubscribe();
-  }, [user, isChatOpen, notificationPermission]);
+  }, [user, isChatOpen, notificationPermission, notificationsEnabled]);
 
   // Monitor Online Users (Shared)
   const [onlineUsers, setOnlineUsers] = useState<number>(0);
@@ -190,7 +212,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         isChatOpen,
         setIsChatOpen,
         notificationPermission,
-        requestNotificationPermission,
+        notificationsEnabled,
+        toggleNotifications,
         onlineUsersCount: onlineUsers,
       }}
     >

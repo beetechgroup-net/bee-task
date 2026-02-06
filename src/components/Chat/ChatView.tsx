@@ -28,11 +28,8 @@ interface ChatViewProps {
 
 export const ChatView: React.FC<ChatViewProps> = ({ onChangeView }) => {
   const { messages, sendMessage, user } = useChat();
-  const {
-    setIsChatOpen,
-    notificationPermission,
-    requestNotificationPermission,
-  } = useChatContext();
+  const { setIsChatOpen, notificationsEnabled, toggleNotifications } =
+    useChatContext();
   const [newMessage, setNewMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
@@ -190,29 +187,24 @@ export const ChatView: React.FC<ChatViewProps> = ({ onChangeView }) => {
             Global Team Chat
           </h2>
           <button
-            onClick={requestNotificationPermission}
+            onClick={toggleNotifications}
             title={
-              notificationPermission === "granted"
-                ? "Notifications Enabled"
+              notificationsEnabled
+                ? "Disble Notifications"
                 : "Enable Notifications"
             }
             style={{
               background: "none",
               border: "none",
               cursor: "pointer",
-              color:
-                notificationPermission === "granted"
-                  ? "var(--color-success)"
-                  : "var(--color-text-tertiary)",
+              color: notificationsEnabled
+                ? "var(--color-success)"
+                : "var(--color-text-tertiary)",
               display: "flex",
               alignItems: "center",
             }}
           >
-            {notificationPermission === "granted" ? (
-              <Bell size={16} />
-            ) : (
-              <BellOff size={16} />
-            )}
+            {notificationsEnabled ? <Bell size={16} /> : <BellOff size={16} />}
           </button>
         </div>
         <span style={{ fontSize: "0.8rem", color: "var(--color-success)" }}>
