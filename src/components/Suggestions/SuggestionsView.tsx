@@ -19,8 +19,8 @@ import {
   XCircle,
   Trash2,
   ChevronDown,
-  ChevronRight,
   ThumbsUp,
+  Pencil,
 } from "lucide-react";
 
 interface Suggestion {
@@ -40,6 +40,9 @@ export const SuggestionsView: React.FC = () => {
   const { user } = useAuth();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingSuggestion, setEditingSuggestion] = useState<Suggestion | null>(
+    null,
+  );
   const [newSuggestionText, setNewSuggestionText] = useState("");
   const [loading, setLoading] = useState(false);
   const [openSections, setOpenSections] = useState({
@@ -77,25 +80,40 @@ export const SuggestionsView: React.FC = () => {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, "suggestions"), {
-        text: newSuggestionText.trim(),
-        userId: user.uid,
-        userName: user.displayName || "Anonymous",
-        userEmail: user.email,
-        userPhotoURL: user.photoURL,
-        status: "pending",
-        votes: 0,
-        votedBy: [],
-        createdAt: serverTimestamp(),
-      });
+      if (editingSuggestion) {
+        // Update existing suggestion
+        await updateDoc(doc(db, "suggestions", editingSuggestion.id), {
+          text: newSuggestionText.trim(),
+        });
+      } else {
+        // Create new suggestion
+        await addDoc(collection(db, "suggestions"), {
+          text: newSuggestionText.trim(),
+          userId: user.uid,
+          userName: user.displayName || "Anonymous",
+          userEmail: user.email,
+          userPhotoURL: user.photoURL,
+          status: "pending",
+          votes: 0,
+          votedBy: [],
+          createdAt: serverTimestamp(),
+        });
+      }
       setNewSuggestionText("");
+      setEditingSuggestion(null);
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error adding suggestion:", error);
-      alert("Failed to add suggestion.");
+      console.error("Error saving suggestion:", error);
+      alert("Failed to save suggestion.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const openEditModal = (suggestion: Suggestion) => {
+    setEditingSuggestion(suggestion);
+    setNewSuggestionText(suggestion.text);
+    setIsModalOpen(true);
   };
 
   const handleUpdateStatus = async (
@@ -206,7 +224,11 @@ export const SuggestionsView: React.FC = () => {
         </div>
 
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditingSuggestion(null);
+            setNewSuggestionText("");
+            setIsModalOpen(true);
+          }}
           style={{
             display: "flex",
             alignItems: "center",
@@ -268,6 +290,10 @@ export const SuggestionsView: React.FC = () => {
                   onUpdateStatus={handleUpdateStatus}
                   onDelete={handleDelete}
                   onVote={handleVote}
+                  onUpdateStatus={handleUpdateStatus}
+                  onDelete={handleDelete}
+                  onVote={handleVote}
+                  onEdit={openEditModal}
                   getStatusColor={getStatusColor}
                 />
               ))}
@@ -337,7 +363,11 @@ export const SuggestionsView: React.FC = () => {
             justifyContent: "center",
             zIndex: 1000,
           }}
-          onClick={() => setIsModalOpen(false)}
+          onClick={() => {
+            setIsModalOpen(false);
+            setEditingSuggestion(null);
+            setNewSuggestionText("");
+          }}
         >
           <div
             style={{
@@ -353,7 +383,7 @@ export const SuggestionsView: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 style={{ marginTop: 0, marginBottom: "1.5rem" }}>
-              New Suggestion
+              {editingSuggestion ? "Edit Suggestion" : "New Suggestion"}
             </h2>
             <form onSubmit={handleAddSuggestion}>
               <div style={{ marginBottom: "1.5rem" }}>
@@ -395,7 +425,11 @@ export const SuggestionsView: React.FC = () => {
               >
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setEditingSuggestion(null);
+                    setNewSuggestionText("");
+                  }}
                   style={{
                     padding: "0.75rem 1.5rem",
                     borderRadius: "var(--radius-md)",
@@ -423,7 +457,11 @@ export const SuggestionsView: React.FC = () => {
                     opacity: loading || !newSuggestionText.trim() ? 0.7 : 1,
                   }}
                 >
-                  {loading ? "Submitting..." : "Submit Suggestion"}
+                  {loading
+                    ? "Submitting..."
+                    : editingSuggestion
+                      ? "Save Changes"
+                      : "Submit Suggestion"}
                 </button>
               </div>
             </form>
@@ -533,6 +571,9 @@ interface SuggestionCardProps {
   onUpdateStatus: (id: string, status: any) => void;
   onDelete: (id: string) => void;
   onVote: (id: string, votes: number, votedBy: string[]) => void;
+
+  onEdit: (suggestion: Suggestion) => void;
+  onVote: (id: string, votes: number, votedBy: string[]) => void;
   getStatusColor: (status: string) => string;
 }
 
@@ -541,7 +582,8 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
   user,
   onUpdateStatus,
   onDelete,
-  onVote,
+
+  onEdit,
   getStatusColor,
 }) => {
   const hasVoted = item.votedBy?.includes(user?.uid);
@@ -697,20 +739,36 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
 
           {(item.userId === user?.uid ||
             user?.email === "gabrielufmscc@gmail.com") && (
-            <button
-              onClick={() => onDelete(item.id)}
-              title="Delete"
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "var(--color-danger)",
-                padding: "0.25rem",
-                marginLeft: "0.5rem",
-              }}
-            >
-              <Trash2 size={18} />
-            </button>
+            <>
+              <button
+                onClick={() => onDelete(item.id)}
+                title="Delete"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--color-danger)",
+                  padding: "0.25rem",
+                  marginLeft: "0.5rem",
+                }}
+              >
+                <Trash2 size={18} />
+              </button>
+              <button
+                onClick={() => onEdit(item)}
+                title="Edit"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--color-primary)",
+                  padding: "0.25rem",
+                  marginLeft: "0.5rem",
+                }}
+              >
+                <Pencil size={18} />
+              </button>
+            </>
           )}
         </div>
       </div>

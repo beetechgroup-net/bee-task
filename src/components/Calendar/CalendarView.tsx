@@ -148,6 +148,7 @@ export const CalendarView: React.FC = () => {
               key={day.toISOString()}
               style={{
                 minHeight: "120px",
+                minWidth: 0,
                 backgroundColor: isCurrentMonth
                   ? "var(--color-bg-primary)"
                   : "var(--color-bg-secondary)",
