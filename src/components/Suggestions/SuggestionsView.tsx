@@ -737,36 +737,37 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
 
           {(item.userId === user?.uid ||
             user?.email === "gabrielufmscc@gmail.com") && (
-            <>
-              <button
-                onClick={() => onDelete(item.id)}
-                title="Delete"
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--color-danger)",
-                  padding: "0.25rem",
-                  marginLeft: "0.5rem",
-                }}
-              >
-                <Trash2 size={18} />
-              </button>
-              <button
-                onClick={() => onEdit(item)}
-                title="Edit"
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--color-primary)",
-                  padding: "0.25rem",
-                  marginLeft: "0.5rem",
-                }}
-              >
-                <Pencil size={18} />
-              </button>
-            </>
+            <button
+              onClick={() => onDelete(item.id)}
+              title="Delete"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--color-danger)",
+                padding: "0.25rem",
+                marginLeft: "0.5rem",
+              }}
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
+
+          {item.userId === user?.uid && (
+            <button
+              onClick={() => onEdit(item)}
+              title="Edit"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--color-primary)",
+                padding: "0.25rem",
+                marginLeft: "0.5rem",
+              }}
+            >
+              <Pencil size={18} />
+            </button>
           )}
         </div>
       </div>
