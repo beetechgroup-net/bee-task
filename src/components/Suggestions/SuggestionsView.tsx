@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ThumbsUp,
   Pencil,
+  ChevronRight,
 } from "lucide-react";
 
 interface Suggestion {
@@ -290,9 +291,6 @@ export const SuggestionsView: React.FC = () => {
                   onUpdateStatus={handleUpdateStatus}
                   onDelete={handleDelete}
                   onVote={handleVote}
-                  onUpdateStatus={handleUpdateStatus}
-                  onDelete={handleDelete}
-                  onVote={handleVote}
                   onEdit={openEditModal}
                   getStatusColor={getStatusColor}
                 />
@@ -318,6 +316,7 @@ export const SuggestionsView: React.FC = () => {
                   onDelete={handleDelete}
                   onVote={handleVote}
                   getStatusColor={getStatusColor}
+                  onEdit={openEditModal}
                 />
               ))}
           </CollapsibleSection>
@@ -341,6 +340,7 @@ export const SuggestionsView: React.FC = () => {
                   onDelete={handleDelete}
                   onVote={handleVote}
                   getStatusColor={getStatusColor}
+                  onEdit={openEditModal}
                 />
               ))}
           </CollapsibleSection>
@@ -571,9 +571,7 @@ interface SuggestionCardProps {
   onUpdateStatus: (id: string, status: any) => void;
   onDelete: (id: string) => void;
   onVote: (id: string, votes: number, votedBy: string[]) => void;
-
   onEdit: (suggestion: Suggestion) => void;
-  onVote: (id: string, votes: number, votedBy: string[]) => void;
   getStatusColor: (status: string) => string;
 }
 
@@ -582,7 +580,7 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
   user,
   onUpdateStatus,
   onDelete,
-
+  onVote,
   onEdit,
   getStatusColor,
 }) => {
