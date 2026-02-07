@@ -17,6 +17,7 @@ import { ChatProvider } from "./context/ChatContext";
 import { PersonDetail } from "./components/Dashboard/PersonDetail";
 import { useAuth } from "./context/AuthContext";
 import { LoginPage } from "./components/Auth/LoginPage";
+import { ThemeProvider } from "./context/ThemeContext";
 
 function AppContent() {
   const [currentView, setCurrentView] = useState("dashboard");
@@ -108,13 +109,15 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <StoreProvider>
-        <NotesProvider>
-          <ChatProvider>
-            <AppContent />
-          </ChatProvider>
-        </NotesProvider>
-      </StoreProvider>
+      <ThemeProvider>
+        <StoreProvider>
+          <NotesProvider>
+            <ChatProvider>
+              <AppContent />
+            </ChatProvider>
+          </NotesProvider>
+        </StoreProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

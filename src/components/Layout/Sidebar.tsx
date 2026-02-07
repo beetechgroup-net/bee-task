@@ -13,6 +13,8 @@ import {
   User as UserIcon,
   Timer,
   Lightbulb,
+  Sun,
+  Moon,
 } from "lucide-react";
 import classNames from "classnames";
 import { PomodoroTimer } from "../Pomodoro/PomodoroTimer";
@@ -20,6 +22,7 @@ import { db } from "../../lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
 import { useChatContext } from "../../context/ChatContext";
+import { useTheme } from "../../context/ThemeContext";
 
 interface SidebarProps {
   currentView: string;
@@ -34,6 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { user, signInWithGoogle, logout } = useAuth();
   const { unreadCount } = useChatContext();
+  const { theme, toggleTheme } = useTheme();
   const [showPomodoro, setShowPomodoro] = React.useState(false);
   const [pendingSuggestionsCount, setPendingSuggestionsCount] =
     React.useState(0);
@@ -204,6 +208,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       <div style={{ marginTop: "auto" }}>
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            padding: "0.75rem 1rem",
+            backgroundColor: "transparent",
+            color: "var(--color-text-secondary)",
+            border: "none",
+            borderRadius: "var(--radius-md)",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            fontWeight: 500,
+            marginBottom: "0.5rem",
+          }}
+        >
+          {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+          <span style={{ flex: 1, textAlign: "left" }}>
+            {theme === "dark" ? "Light Mode" : "Dark Mode"}
+          </span>
+        </button>
+
         {/* Toggle Pomodoro Button */}
         <button
           onClick={() => setShowPomodoro(!showPomodoro)}
