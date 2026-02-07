@@ -22,11 +22,13 @@ import {
   ThumbsUp,
   Pencil,
   ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 
 interface Suggestion {
   id: string;
   text: string;
+  type?: "bug" | "feature";
   userId: string;
   userName: string;
   userEmail: string;
@@ -45,6 +47,9 @@ export const SuggestionsView: React.FC = () => {
     null,
   );
   const [newSuggestionText, setNewSuggestionText] = useState("");
+  const [newSuggestionType, setNewSuggestionType] = useState<"bug" | "feature">(
+    "feature",
+  );
   const [loading, setLoading] = useState(false);
   const [openSections, setOpenSections] = useState({
     pending: true,
@@ -85,11 +90,13 @@ export const SuggestionsView: React.FC = () => {
         // Update existing suggestion
         await updateDoc(doc(db, "suggestions", editingSuggestion.id), {
           text: newSuggestionText.trim(),
+          type: newSuggestionType,
         });
       } else {
         // Create new suggestion
         await addDoc(collection(db, "suggestions"), {
           text: newSuggestionText.trim(),
+          type: newSuggestionType,
           userId: user.uid,
           userName: user.displayName || "Anonymous",
           userEmail: user.email,
@@ -101,6 +108,7 @@ export const SuggestionsView: React.FC = () => {
         });
       }
       setNewSuggestionText("");
+      setNewSuggestionType("feature");
       setEditingSuggestion(null);
       setIsModalOpen(false);
     } catch (error) {
@@ -114,6 +122,7 @@ export const SuggestionsView: React.FC = () => {
   const openEditModal = (suggestion: Suggestion) => {
     setEditingSuggestion(suggestion);
     setNewSuggestionText(suggestion.text);
+    setNewSuggestionType(suggestion.type || "feature");
     setIsModalOpen(true);
   };
 
@@ -228,6 +237,7 @@ export const SuggestionsView: React.FC = () => {
           onClick={() => {
             setEditingSuggestion(null);
             setNewSuggestionText("");
+            setNewSuggestionType("feature");
             setIsModalOpen(true);
           }}
           style={{
@@ -386,6 +396,96 @@ export const SuggestionsView: React.FC = () => {
               {editingSuggestion ? "Edit Suggestion" : "New Suggestion"}
             </h2>
             <form onSubmit={handleAddSuggestion}>
+              <div style={{ marginBottom: "1.5rem" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    marginBottom: "0.5rem",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  Type
+                </label>
+                <div style={{ display: "flex", gap: "1rem" }}>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      cursor: "pointer",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid",
+                      borderColor:
+                        newSuggestionType === "feature"
+                          ? "var(--color-accent)"
+                          : "var(--color-bg-tertiary)",
+                      backgroundColor:
+                        newSuggestionType === "feature"
+                          ? "rgba(99, 102, 241, 0.1)"
+                          : "transparent",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="type"
+                      value="feature"
+                      checked={newSuggestionType === "feature"}
+                      onChange={() => setNewSuggestionType("feature")}
+                      style={{ accentColor: "var(--color-accent)" }}
+                    />
+                    <span
+                      style={{
+                        fontSize: "0.9rem",
+                        fontWeight: 500,
+                        color: "var(--color-text-primary)",
+                      }}
+                    >
+                      Melhoria / Feature
+                    </span>
+                  </label>
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      cursor: "pointer",
+                      padding: "0.5rem 1rem",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid",
+                      borderColor:
+                        newSuggestionType === "bug"
+                          ? "var(--color-danger)"
+                          : "var(--color-bg-tertiary)",
+                      backgroundColor:
+                        newSuggestionType === "bug"
+                          ? "rgba(239, 68, 68, 0.1)"
+                          : "transparent",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="type"
+                      value="bug"
+                      checked={newSuggestionType === "bug"}
+                      onChange={() => setNewSuggestionType("bug")}
+                      style={{ accentColor: "var(--color-danger)" }}
+                    />
+                    <span
+                      style={{
+                        fontSize: "0.9rem",
+                        fontWeight: 500,
+                        color: "var(--color-text-primary)",
+                      }}
+                    >
+                      Bug Report
+                    </span>
+                  </label>
+                </div>
+              </div>
+
               <div style={{ marginBottom: "1.5rem" }}>
                 <label
                   style={{
@@ -632,6 +732,32 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
           >
             {item.userName}
           </span>
+          {item.type && (
+            <span
+              style={{
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                padding: "0.1rem 0.4rem",
+                borderRadius: "4px",
+                marginLeft: "0.5rem",
+                backgroundColor:
+                  item.type === "bug"
+                    ? "rgba(239, 68, 68, 0.1)"
+                    : "rgba(99, 102, 241, 0.1)",
+                color:
+                  item.type === "bug"
+                    ? "var(--color-danger)"
+                    : "var(--color-accent)",
+                border: "1px solid",
+                borderColor:
+                  item.type === "bug"
+                    ? "rgba(239, 68, 68, 0.2)"
+                    : "rgba(99, 102, 241, 0.2)",
+              }}
+            >
+              {item.type === "bug" ? "BUG" : "FEATURE"}
+            </span>
+          )}
         </div>
         <div
           style={{
@@ -733,6 +859,22 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
                 <CheckCircle size={20} />
               </button>
             </>
+          )}
+
+          {(item.status === "completed" || item.status === "discarded") && (
+            <button
+              onClick={() => onUpdateStatus(item.id, "pending")}
+              title="Revert to Pending"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--color-text-secondary)",
+                padding: "0.25rem",
+              }}
+            >
+              <RotateCcw size={18} />
+            </button>
           )}
 
           {(item.userId === user?.uid ||
