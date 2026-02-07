@@ -20,6 +20,7 @@ import {
   Trash2,
   ChevronDown,
   ThumbsUp,
+  ThumbsDown,
   Pencil,
   ChevronRight,
   RotateCcw,
@@ -36,7 +37,9 @@ interface Suggestion {
   status: "pending" | "completed" | "discarded";
   createdAt: any;
   votes: number;
-  votedBy: string[]; // List of user IDs who voted
+  votedBy: string[]; // List of user IDs who voted (likes)
+  dislikes: number;
+  dislikedBy: string[]; // List of user IDs who disliked
 }
 
 export const SuggestionsView: React.FC = () => {
@@ -102,8 +105,11 @@ export const SuggestionsView: React.FC = () => {
           userEmail: user.email,
           userPhotoURL: user.photoURL,
           status: "pending",
+
           votes: 0,
           votedBy: [],
+          dislikes: 0,
+          dislikedBy: [],
           createdAt: serverTimestamp(),
         });
       }
@@ -152,8 +158,22 @@ export const SuggestionsView: React.FC = () => {
     id: string,
     currentVotes: number,
     votedBy: string[],
+    currentDislikes: number,
+    dislikedBy: string[],
   ) => {
     if (!user) return;
+
+    // Check if user has already disliked
+    const hasDisliked = dislikedBy?.includes(user.uid);
+    let newDislikedBy = [...(dislikedBy || [])];
+    let newDislikes = currentDislikes;
+
+    // If user has disliked, remove the dislike
+    if (hasDisliked) {
+      newDislikedBy = newDislikedBy.filter((uid) => uid !== user.uid);
+      newDislikes = Math.max(0, newDislikes - 1);
+    }
+
     const hasVoted = votedBy?.includes(user.uid);
     const newVotedBy = hasVoted
       ? votedBy.filter((uid) => uid !== user.uid)
@@ -164,9 +184,49 @@ export const SuggestionsView: React.FC = () => {
       await updateDoc(doc(db, "suggestions", id), {
         votes: newVotes,
         votedBy: newVotedBy,
+        dislikes: newDislikes,
+        dislikedBy: newDislikedBy,
       });
     } catch (error) {
       console.error("Error updating vote:", error);
+    }
+  };
+
+  const handleDislike = async (
+    id: string,
+    currentDislikes: number,
+    dislikedBy: string[],
+    currentVotes: number,
+    votedBy: string[],
+  ) => {
+    if (!user) return;
+
+    // Check if user has already liked
+    const hasVoted = votedBy?.includes(user.uid);
+    let newVotedBy = [...(votedBy || [])];
+    let newVotes = currentVotes;
+
+    // If user has liked, remove the like
+    if (hasVoted) {
+      newVotedBy = newVotedBy.filter((uid) => uid !== user.uid);
+      newVotes = Math.max(0, newVotes - 1);
+    }
+
+    const hasDisliked = dislikedBy?.includes(user.uid);
+    const newDislikedBy = hasDisliked
+      ? dislikedBy.filter((uid) => uid !== user.uid)
+      : [...(dislikedBy || []), user.uid];
+    const newDislikes = hasDisliked ? currentDislikes - 1 : currentDislikes + 1;
+
+    try {
+      await updateDoc(doc(db, "suggestions", id), {
+        dislikes: newDislikes,
+        dislikedBy: newDislikedBy,
+        votes: newVotes,
+        votedBy: newVotedBy,
+      });
+    } catch (error) {
+      console.error("Error updating dislike:", error);
     }
   };
 
@@ -291,7 +351,11 @@ export const SuggestionsView: React.FC = () => {
             color="var(--color-accent)"
           >
             {suggestions
-              .sort((a, b) => (b.votes || 0) - (a.votes || 0))
+              .sort((a, b) => {
+                const scoreA = (a.votes || 0) - (a.dislikes || 0);
+                const scoreB = (b.votes || 0) - (b.dislikes || 0);
+                return scoreB - scoreA;
+              })
               .filter((s) => s.status === "pending" || !s.status)
               .map((item) => (
                 <SuggestionCard
@@ -301,6 +365,7 @@ export const SuggestionsView: React.FC = () => {
                   onUpdateStatus={handleUpdateStatus}
                   onDelete={handleDelete}
                   onVote={handleVote}
+                  onDislike={handleDislike}
                   onEdit={openEditModal}
                   getStatusColor={getStatusColor}
                 />
@@ -325,6 +390,7 @@ export const SuggestionsView: React.FC = () => {
                   onUpdateStatus={handleUpdateStatus}
                   onDelete={handleDelete}
                   onVote={handleVote}
+                  onDislike={handleDislike}
                   getStatusColor={getStatusColor}
                   onEdit={openEditModal}
                 />
@@ -349,6 +415,7 @@ export const SuggestionsView: React.FC = () => {
                   onUpdateStatus={handleUpdateStatus}
                   onDelete={handleDelete}
                   onVote={handleVote}
+                  onDislike={handleDislike}
                   getStatusColor={getStatusColor}
                   onEdit={openEditModal}
                 />
@@ -670,7 +737,20 @@ interface SuggestionCardProps {
   user: any;
   onUpdateStatus: (id: string, status: any) => void;
   onDelete: (id: string) => void;
-  onVote: (id: string, votes: number, votedBy: string[]) => void;
+  onVote: (
+    id: string,
+    votes: number,
+    votedBy: string[],
+    dislikes: number,
+    dislikedBy: string[],
+  ) => void;
+  onDislike: (
+    id: string,
+    dislikes: number,
+    dislikedBy: string[],
+    votes: number,
+    votedBy: string[],
+  ) => void;
   onEdit: (suggestion: Suggestion) => void;
   getStatusColor: (status: string) => string;
 }
@@ -681,10 +761,12 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
   onUpdateStatus,
   onDelete,
   onVote,
+  onDislike,
   onEdit,
   getStatusColor,
 }) => {
   const hasVoted = item.votedBy?.includes(user?.uid);
+  const hasDisliked = item.dislikedBy?.includes(user?.uid);
 
   return (
     <div
@@ -802,32 +884,81 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({
           alignItems: "center",
         }}
       >
-        {/* Vote Button */}
-        <button
-          onClick={() => onVote(item.id, item.votes || 0, item.votedBy || [])}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            background: hasVoted ? "rgba(59, 130, 246, 0.1)" : "transparent",
-            border: "1px solid",
-            borderColor: hasVoted
-              ? "var(--color-accent)"
-              : "var(--color-bg-tertiary)",
-            borderRadius: "var(--radius-md)",
-            padding: "0.4rem 0.8rem",
-            cursor: "pointer",
-            color: hasVoted
-              ? "var(--color-accent)"
-              : "var(--color-text-secondary)",
-            transition: "all 0.2s",
-          }}
-        >
-          <ThumbsUp size={16} fill={hasVoted ? "currentColor" : "none"} />
-          <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
-            {item.votes || 0}
-          </span>
-        </button>
+        {/* Vote Buttons */}
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button
+            onClick={() =>
+              onVote(
+                item.id,
+                item.votes || 0,
+                item.votedBy || [],
+                item.dislikes || 0,
+                item.dislikedBy || [],
+              )
+            }
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              background: hasVoted ? "rgba(59, 130, 246, 0.1)" : "transparent",
+              border: "1px solid",
+              borderColor: hasVoted
+                ? "var(--color-accent)"
+                : "var(--color-bg-tertiary)",
+              borderRadius: "var(--radius-md)",
+              padding: "0.4rem 0.8rem",
+              cursor: "pointer",
+              color: hasVoted
+                ? "var(--color-accent)"
+                : "var(--color-text-secondary)",
+              transition: "all 0.2s",
+            }}
+          >
+            <ThumbsUp size={16} fill={hasVoted ? "currentColor" : "none"} />
+            <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+              {item.votes || 0}
+            </span>
+          </button>
+
+          <button
+            onClick={() =>
+              onDislike(
+                item.id,
+                item.dislikes || 0,
+                item.dislikedBy || [],
+                item.votes || 0,
+                item.votedBy || [],
+              )
+            }
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              background: hasDisliked
+                ? "rgba(239, 68, 68, 0.1)"
+                : "transparent",
+              border: "1px solid",
+              borderColor: hasDisliked
+                ? "var(--color-danger)"
+                : "var(--color-bg-tertiary)",
+              borderRadius: "var(--radius-md)",
+              padding: "0.4rem 0.8rem",
+              cursor: "pointer",
+              color: hasDisliked
+                ? "var(--color-danger)"
+                : "var(--color-text-secondary)",
+              transition: "all 0.2s",
+            }}
+          >
+            <ThumbsDown
+              size={16}
+              fill={hasDisliked ? "currentColor" : "none"}
+            />
+            <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+              {item.dislikes || 0}
+            </span>
+          </button>
+        </div>
 
         <div style={{ display: "flex", alignItems: "center" }}>
           {item.status === "pending" && (
