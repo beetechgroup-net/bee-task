@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
 import type {
   Project,
   Task,
@@ -80,13 +82,127 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Sync to Firestore
   useFirestoreSync<Task[]>("tasks", tasks, setTasks, user?.uid);
-  useFirestoreSync<Project[]>("projects", projects, setProjects, user?.uid);
+  useFirestoreSync<Project[]>("projects", projects, setProjects, user?.uid, {
+    isGlobal: true,
+  });
   useFirestoreSync<StandardTask[]>(
     "standardTasks",
     standardTasks,
     setStandardTasks,
     user?.uid,
   );
+
+  // Migration: User Projects -> Global Projects
+  useEffect(() => {
+    const migrateProjects = async () => {
+      if (!user) return;
+
+      const MIGRATION_KEY = `bee_task_migration_v1_global_projects_${user.uid}`;
+      const hasMigrated = localStorage.getItem(MIGRATION_KEY);
+
+      if (hasMigrated) return;
+
+      console.log("[Migration] Starting global projects migration...");
+
+      try {
+        // 1. Fetch Legacy User Projects from Firestore
+        // (Since we switched sync to Global, 'projects' state might eventually reflect Global,
+        // but initially we want to read the OLD path to get data to merge)
+        const userProjectsRef = doc(db, "users", user.uid, "data", "projects");
+        const userProjectsSnap = await getDoc(userProjectsRef);
+
+        if (!userProjectsSnap.exists()) {
+          console.log("[Migration] No legacy user projects found. Skipping.");
+          localStorage.setItem(MIGRATION_KEY, "true");
+          return;
+        }
+
+        const legacyProjects = (userProjectsSnap.data().items ||
+          []) as Project[];
+        console.log(
+          `[Migration] Found ${legacyProjects.length} legacy projects.`,
+        );
+
+        // 2. Fetch current Global Projects (Directly from DB to be sure, or use current state if synced?
+        // Using direct DB fetch is safer to avoid race with sync hook)
+        const globalProjectsRef = doc(db, "global_data", "projects");
+        const globalProjectsSnap = await getDoc(globalProjectsRef);
+        let currentGlobalProjects = (
+          globalProjectsSnap.exists() ? globalProjectsSnap.data().items : []
+        ) as Project[];
+
+        // Ensure default exists
+        if (currentGlobalProjects.length === 0) {
+          currentGlobalProjects = [...DEFAULT_PROJECTS];
+        }
+
+        const projectMapping: Record<string, string> = {}; // LegacyID -> GlobalID
+        const newGlobalProjects = [...currentGlobalProjects];
+
+        // 3. Merge Logic
+        for (const legacyP of legacyProjects) {
+          // Find if a global project with same name already exists
+          const existingGlobal = newGlobalProjects.find(
+            (gp) => gp.name.toLowerCase() === legacyP.name.toLowerCase(),
+          );
+
+          if (existingGlobal) {
+            // Map legacy ID to existing Global ID
+            projectMapping[legacyP.id] = existingGlobal.id;
+          } else {
+            // Create new Global Project
+            // We can keep the legacy ID if it doesn't conflict?
+            // Or generate new one? Let's keep legacy ID if unique, otherwise gen new.
+            // But legacy IDs are UUIDs, likely unique.
+            // However, to be clean, let's just push it.
+            // If we want to "promote" the project to global, we add it.
+            // NOTE: If multiple users have "Client A", first one creates it. Second one maps to it. PERFECT.
+            const isIdConflict = newGlobalProjects.some(
+              (gp) => gp.id === legacyP.id,
+            );
+            const newId = isIdConflict ? uuidv4() : legacyP.id;
+
+            const newProject = { ...legacyP, id: newId };
+            newGlobalProjects.push(newProject);
+            projectMapping[legacyP.id] = newId;
+          }
+        }
+
+        // 4. Update Global Projects
+        await setDoc(
+          globalProjectsRef,
+          { items: newGlobalProjects },
+          { merge: true },
+        );
+        // Update local state immediately to reflect changes
+        setProjects(newGlobalProjects);
+
+        // 5. Update User Tasks
+        // We need to update local tasks state AND firestore tasks
+        // Since tasks are synced via hook UseFirestoreSync -> tasks state,
+        // updating 'tasks' state locally should trigger the sync save!
+        // But we need to make sure we have the latest tasks loaded.
+        // Assuming 'tasks' state is fresh or will be.
+
+        setTasks((prevTasks) => {
+          const updatedTasks = prevTasks.map((task) => {
+            if (task.projectId && projectMapping[task.projectId]) {
+              return { ...task, projectId: projectMapping[task.projectId] };
+            }
+            return task;
+          });
+          return updatedTasks;
+        });
+
+        console.log("[Migration] Migration completed successfully.");
+        localStorage.setItem(MIGRATION_KEY, "true");
+      } catch (error) {
+        console.error("[Migration] Failed:", error);
+      }
+    };
+
+    migrateProjects();
+  }, [user]);
 
   const [, setTick] = useState(0);
 

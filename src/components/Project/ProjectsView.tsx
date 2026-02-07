@@ -55,7 +55,18 @@ export const ProjectsView: React.FC = () => {
           marginBottom: "2rem",
         }}
       >
-        <h2 style={{ fontSize: "1.75rem", fontWeight: 700 }}>Projects</h2>
+        <h2 style={{ fontSize: "1.75rem", fontWeight: 700 }}>
+          Projects{" "}
+          <span
+            style={{
+              fontSize: "1rem",
+              fontWeight: 400,
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            (Global)
+          </span>
+        </h2>
         <button
           onClick={() => setIsCreating(true)}
           disabled={isCreating}

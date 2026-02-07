@@ -22,7 +22,6 @@ interface UserData {
 interface UserTaskData {
   user: UserData;
   allTasks: Task[]; // Store all tasks to filter client-side
-  projects: Project[];
 }
 
 interface BlendaDashboardProps {
@@ -36,6 +35,7 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usersData, setUsersData] = useState<UserTaskData[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: startOfMonth(new Date()).toISOString().split("T")[0],
     end: new Date().toISOString().split("T")[0],
@@ -46,6 +46,19 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
       try {
         setLoading(true);
         setError(null);
+
+        // 1. Fetch Global Projects
+        let globalProjects: Project[] = [];
+        try {
+          const globalProjectsRef = doc(db, "global_data", "projects");
+          const globalProjectsSnap = await getDoc(globalProjectsRef);
+          if (globalProjectsSnap.exists()) {
+            globalProjects = globalProjectsSnap.data().items as Project[];
+          }
+        } catch (e: any) {
+          console.error("Error fetching global projects:", e);
+        }
+        setProjects(globalProjects);
 
         const usersRef = collection(db, "users");
         let usersSnap;
@@ -79,24 +92,9 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
             );
           }
 
-          // Fetch Projects
-          const projectsDocRef = doc(db, "users", uid, "data", "projects");
-          let userProjects: Project[] = [];
-          try {
-            const projectsSnap = await getDoc(projectsDocRef);
-            if (projectsSnap.exists()) {
-              userProjects = projectsSnap.data().items as Project[];
-            }
-          } catch (e: any) {
-            console.error(
-              `Error fetching projects for ${safeUserData.email}: ${e.message}`,
-            );
-          }
-
           allUsersData.push({
             user: safeUserData,
             allTasks: tasks,
-            projects: userProjects,
           });
         }
 
@@ -201,18 +199,14 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
       0,
     );
 
-    const allProjectsMap = new Map<string, Project>();
-    processedUsers.forEach((ud) => {
-      ud.projects.forEach((p) => allProjectsMap.set(p.id, p));
-    });
+    const projectsMap = new Map<string, Project>();
+    projects.forEach((p) => projectsMap.set(p.id, p));
 
     const globalProjectStats = processedUsers.reduce(
       (acc, d) => {
         Object.entries(d.totalDurationByProject).forEach(
           ([projectId, duration]) => {
-            const projectName =
-              allProjectsMap.get(projectId)?.name || "Unknown Project";
-            acc[projectName] = (acc[projectName] || 0) + duration;
+            acc[projectId] = (acc[projectId] || 0) + duration;
           },
         );
         return acc;
@@ -235,9 +229,9 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
       globalTotalDuration,
       globalProjectStats,
       globalTypeStats,
-      allProjectsMap,
+      projectsMap,
     };
-  }, [usersData, dateRange]);
+  }, [usersData, dateRange, projects]);
 
   const formatDuration = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
@@ -532,14 +526,16 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
           <SimpleBarChart
             data={dashboardStats.globalProjectStats}
             total={dashboardStats.globalTotalDuration}
-            getColor={(name) => {
-              // Find any project with this name to get its color
-              for (const p of dashboardStats.allProjectsMap.values()) {
-                if (p.name === name) return p.color;
-              }
-              return "gray";
+            getColor={(id) => {
+              // Now lookup by ID since data keys are IDs
+              return dashboardStats.projectsMap.get(id)?.color || "gray";
             }}
-            getLabel={(name) => name}
+            getLabel={(id) => {
+              // Now lookup by ID since data keys are IDs
+              return (
+                dashboardStats.projectsMap.get(id)?.name || "Unknown Project"
+              );
+            }}
           />
         </div>
         <div
@@ -705,7 +701,7 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
                     }}
                   >
                     {data.recentTasks.map((task) => {
-                      const project = data.projects.find(
+                      const project = projects.find(
                         (p) => p.id === task.projectId,
                       );
                       return (
