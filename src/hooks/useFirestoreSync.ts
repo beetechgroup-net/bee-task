@@ -18,10 +18,8 @@ export const useFirestoreSync = <T>(
   localData: T,
   setLocalData: (data: T) => void,
   explicitUserId?: string,
-  options?: { isGlobal?: boolean },
 ) => {
   const userId = explicitUserId;
-  const isGlobal = options?.isGlobal;
   const isRemoteUpdate = useRef(false);
   const localDataRef = useRef(localData);
   const [isSynchronized, setIsSynchronized] = useState(false);
@@ -33,7 +31,7 @@ export const useFirestoreSync = <T>(
 
   // 1. Real-time Sync: Listen to Firestore changes
   useEffect(() => {
-    if (!userId && !isGlobal) {
+    if (!userId) {
       setIsSynchronized(false);
       return;
     }
@@ -41,14 +39,10 @@ export const useFirestoreSync = <T>(
     // Reset sync state when user/collection changes
     setIsSynchronized(false);
 
-    const targetName = isGlobal ? "GLOBAL" : userId;
     console.log(
-      `[Firestore] Subscribing to ${collectionName} for ${targetName}...`,
+      `[Firestore] Subscribing to ${collectionName} for ${userId}...`,
     );
-
-    const docRef = isGlobal
-      ? doc(db, "global_data", collectionName)
-      : doc(db, "users", userId!, "data", collectionName);
+    const docRef = doc(db, "users", userId, "data", collectionName);
 
     const unsubscribe = onSnapshot(
       docRef,
@@ -89,12 +83,12 @@ export const useFirestoreSync = <T>(
 
     return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, collectionName, isGlobal]);
+  }, [userId, collectionName]);
 
   // 2. Sync: Save to Firestore whenever localData changes
   useEffect(() => {
     const saveData = async () => {
-      if (!userId && !isGlobal) return;
+      if (!userId) return;
 
       // Block saving until we have synced with server at least once
       if (!isSynchronized) {
@@ -115,10 +109,7 @@ export const useFirestoreSync = <T>(
         console.log(
           `[Firestore] Saving ${collectionName} (${Array.isArray(localData) ? localData.length : 0} items)`,
         );
-        const docRef = isGlobal
-          ? doc(db, "global_data", collectionName)
-          : doc(db, "users", userId!, "data", collectionName);
-
+        const docRef = doc(db, "users", userId, "data", collectionName);
         await setDoc(docRef, { items: localData }, { merge: true });
         console.log(`[Firestore] Saved ${collectionName} successfully.`);
       } catch (e) {
@@ -126,8 +117,8 @@ export const useFirestoreSync = <T>(
       }
     };
 
-    if (localData && (userId || isGlobal)) {
+    if (localData && userId) {
       saveData();
     }
-  }, [localData, collectionName, userId, isSynchronized, isGlobal]);
+  }, [localData, collectionName, userId, isSynchronized]);
 };
