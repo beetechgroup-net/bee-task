@@ -140,7 +140,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           priority,
           parsedLogs.map((l) => ({
             startTime: l.startTime,
-            endTime: l.endTime || 0,
+            endTime: l.endTime,
           })),
         );
         // Note: addTask expects complete logs (start+end) for initialLogs based on my previous edit?

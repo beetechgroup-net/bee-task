@@ -29,7 +29,7 @@ interface StoreContextType {
     projectId: string,
     type: TaskType,
     priority: "low" | "medium" | "high",
-    initialLogs?: { startTime: number; endTime: number }[],
+    initialLogs?: { startTime: number; endTime?: number }[],
   ) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
@@ -106,7 +106,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     projectId: string,
     type: TaskType,
     priority: "low" | "medium" | "high",
-    initialLogs?: { startTime: number; endTime: number }[],
+    initialLogs?: { startTime: number; endTime?: number }[],
   ) => {
     const isPastTask = !!initialLogs && initialLogs.length > 0;
 
@@ -117,9 +117,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
             id: uuidv4(),
             startTime: log.startTime,
             endTime: log.endTime,
-            duration: log.endTime - log.startTime,
+            duration: log.endTime ? log.endTime - log.startTime : 0,
           }))
         : [];
+
+    // Check if any log is active (no endTime)
+    const hasActiveLog = logs.some((l) => !l.endTime);
 
     // Generate history based on logs
     const history: TaskHistory[] = [];
@@ -131,9 +134,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
         timestamp: logs[0].startTime,
       });
 
-      // Removed unused loop
-
-      // Finish event at last log end
+      // Finish event at last log end IF it has an end time
       const lastLog = logs[logs.length - 1];
       if (lastLog.endTime) {
         history.push({
@@ -141,6 +142,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
           action: "finish",
           timestamp: lastLog.endTime,
         });
+      } else {
+        // If last log is active, we might want a "start" event for it?
+        // But "create" at start time covers it for now.
+        // Actually, if it's active, we should probably add a "start" event
+        // corresponding to the active log's start time if it's different/same?
+        // The first log start time is the creation time.
+        // If there are multiple logs and the last one is active:
+        if (logs.length > 1) {
+          history.push({
+            id: uuidv4(),
+            action: "start",
+            timestamp: lastLog.startTime,
+          });
+        } else {
+          // Only one log and it's active. "create" is enough?
+          // Maybe explicitly "start" too?
+          history.push({
+            id: uuidv4(),
+            action: "start",
+            timestamp: lastLog.startTime,
+          });
+        }
       }
     } else {
       history.push({
@@ -157,7 +180,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
       projectId,
       type,
       priority,
-      status: isPastTask ? "done" : "todo",
+      status: hasActiveLog ? "in-progress" : isPastTask ? "done" : "todo",
       logs,
       history,
       createdAt: isPastTask && logs.length > 0 ? logs[0].startTime : Date.now(),
