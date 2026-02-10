@@ -25,6 +25,9 @@ export const StandardTaskForm: React.FC<StandardTaskFormProps> = ({
     { startTime: string; endTime: string }[]
   >([{ startTime: "", endTime: "" }]);
   const [isCustomType, setIsCustomType] = useState(false);
+  const [autoCreate, setAutoCreate] = useState(
+    initialValues?.autoCreate || false,
+  );
 
   useEffect(() => {
     if (initialValues) {
@@ -32,6 +35,7 @@ export const StandardTaskForm: React.FC<StandardTaskFormProps> = ({
       setProjectId(initialValues.projectId || projects[0]?.id || "");
       setType(initialValues.type || "Development");
       setPriority(initialValues.priority || "medium");
+      setAutoCreate(initialValues.autoCreate || false);
 
       if (initialValues.intervals && initialValues.intervals.length > 0) {
         setIntervals(initialValues.intervals);
@@ -66,6 +70,7 @@ export const StandardTaskForm: React.FC<StandardTaskFormProps> = ({
       type,
       priority,
       intervals: validIntervals,
+      autoCreate,
       // Clear deprecated fields if we want, or keep first one for compat?
       // Let's just use intervals.
     };
@@ -133,6 +138,25 @@ export const StandardTaskForm: React.FC<StandardTaskFormProps> = ({
           color: "var(--color-text-primary)",
         }}
       />
+
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem",
+          cursor: "pointer",
+          fontSize: "0.9rem",
+          color: "var(--color-text-primary)",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={autoCreate}
+          onChange={(e) => setAutoCreate(e.target.checked)}
+          style={{ width: "1.2rem", height: "1.2rem" }}
+        />
+        Automatically create task everyday (Mon-Fri)
+      </label>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         {intervals.map((interval, index) => (

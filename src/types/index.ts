@@ -49,6 +49,8 @@ export interface StandardTask {
   type?: TaskType;
   priority?: Priority;
   intervals?: StandardTaskInterval[]; // Optional for backward compatibility during dev, but ideally required
+  autoCreate?: boolean; // Whether to automatically create a task from this standard task
+  lastAutoCreated?: number; // Timestamp of the last time this task was automatically created
   // Deprecated fields (optional to keep for a moment or remove)
   startTime?: string;
   endTime?: string;
