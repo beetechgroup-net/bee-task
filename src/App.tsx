@@ -18,6 +18,7 @@ import { PersonDetail } from "./components/Dashboard/PersonDetail";
 import { useAuth } from "./context/AuthContext";
 import { LoginPage } from "./components/Auth/LoginPage";
 import { ThemeProvider } from "./context/ThemeContext";
+import { VersionBanner } from "./components/VersionBanner/VersionBanner";
 
 function AppContent() {
   const [currentView, setCurrentView] = useState("dashboard");
@@ -114,6 +115,46 @@ function App() {
           <NotesProvider>
             <ChatProvider>
               <AppContent />
+              <VersionBanner
+                currentVersion="0.2.0"
+                releaseNotes={
+                  <div>
+                    <h4
+                      style={{
+                        marginBottom: "0.5rem",
+                        fontWeight: 600,
+                        color: "var(--color-accent)",
+                      }}
+                    >
+                      🚀 What's New:
+                    </h4>
+                    <ul
+                      style={{
+                        paddingLeft: "1.2rem",
+                        marginBottom: "1rem",
+                        listStyleType: "disc",
+                      }}
+                    >
+                      <li>
+                        <strong>Auto-Create Standard Tasks:</strong> Now you can
+                        set standard tasks to be automatically created every
+                        weekday!
+                      </li>
+                      <li>
+                        <strong>Version Banner:</strong> You're looking at it!
+                        Stay updated with the latest changes.
+                      </li>
+                      <li>
+                        <strong>Bug Fixes & Improvements:</strong> General
+                        stability and performance updates.
+                      </li>
+                    </ul>
+                    <p style={{ fontSize: "0.9rem", opacity: 0.8 }}>
+                      Enjoy the new update! 🐝
+                    </p>
+                  </div>
+                }
+              />
             </ChatProvider>
           </NotesProvider>
         </StoreProvider>

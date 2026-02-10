@@ -45,6 +45,10 @@ interface StoreContextType {
   addStandardTask: (task: Omit<StandardTask, "id">) => void;
   updateStandardTask: (id: string, updates: Partial<StandardTask>) => void;
   deleteStandardTask: (id: string) => void;
+  // Version control
+  isVersionSeen: (version: string) => boolean;
+  setVersionSeen: (version: string, seen?: boolean) => void;
+  resetVersionSeen: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -309,6 +313,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     setStandardTasks(standardTasks.filter((t) => t.id !== id));
   };
 
+  const isVersionSeen = (version: string) => {
+    const seen = localStorage.getItem(`bee-task-version-seen-${version}`);
+    return seen === "true";
+  };
+
+  const setVersionSeen = (version: string, seen: boolean = true) => {
+    if (seen) {
+      localStorage.setItem(`bee-task-version-seen-${version}`, "true");
+    } else {
+      localStorage.removeItem(`bee-task-version-seen-${version}`);
+    }
+  };
+
+  const resetVersionSeen = () => {
+    // Clears all version seen flags (or just strictly the keys we know? simplest is to iterate or just support current?)
+    // User asked "zerar dado 'ja vi o banner'".
+    // A simple regex approach or clearing specific keys is safer than clearing all localStorage.
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("bee-task-version-seen-")) {
+        localStorage.removeItem(key);
+      }
+    });
+    // Force re-render or let component handle it?
+    // The component checks on mount/update. Ideally we trigger an update.
+    // For now, reload to keep it simple or expose a state trigger?
+    // Let's just expose the method. The App component will re-render if we change a state, but we aren't changing state here, just LS.
+    // To make it reactive, we might need a state.
+    window.location.reload();
+  };
+
   // Check for auto-creating standard tasks
   useEffect(() => {
     const checkAndCreateAutoTasks = () => {
@@ -394,6 +428,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
         addStandardTask,
         updateStandardTask,
         deleteStandardTask,
+        isVersionSeen,
+        setVersionSeen,
+        resetVersionSeen,
       }}
     >
       {children}

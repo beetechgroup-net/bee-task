@@ -476,6 +476,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
           />
         </a>
       </div>
+
+      <div
+        style={{
+          marginTop: "1rem",
+          paddingTop: "1rem",
+          borderTop: "1px solid var(--color-bg-tertiary)",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <button
+          onClick={() => {
+            if (confirm("Reset version info? The banner will appear again.")) {
+              // We need to access resetVersionSeen from StoreContext
+              // Since Sidebar is inside StoreProvider, we can use useStore()
+              // But we didn't import it in this file yet.
+              // Let's just do a quick localStorage hack specific for this button as requested,
+              // or better, import useStore.
+              localStorage.removeItem("bee-task-version-seen-0.2.0");
+              window.location.reload();
+            }
+          }}
+          style={{
+            fontSize: "0.7rem",
+            color: "var(--color-text-secondary)",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+            opacity: 0.5,
+          }}
+        >
+          v0.2.0 (Reset)
+        </button>
+      </div>
     </div>
   );
 };
