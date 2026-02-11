@@ -7,6 +7,8 @@ import {
   addDoc,
   serverTimestamp,
   onSnapshot,
+  getDoc,
+  doc,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useAuth } from "../context/AuthContext";
@@ -17,6 +19,7 @@ export interface ChatMessage {
   text: string;
   userId: string;
   userEmail: string;
+  userRole?: string;
   color: string;
   createdAt: any; // Firestore Timestamp
   replyTo?: {
@@ -60,10 +63,18 @@ export const useChat = () => {
     if (!user || !text.trim()) return;
 
     try {
+      // Fetch user role
+      let userRole = "";
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        userRole = userDoc.data().role || "";
+      }
+
       await addDoc(collection(db, "messages"), {
         text: text.trim(),
         userId: user.uid,
         userEmail: user.email || "Anonymous",
+        userRole: userRole,
         color: generateColorFromString(user.email || user.uid),
         createdAt: serverTimestamp(),
         replyTo: replyTo || null,

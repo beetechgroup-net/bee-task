@@ -19,6 +19,7 @@ import { useAuth } from "./context/AuthContext";
 import { LoginPage } from "./components/Auth/LoginPage";
 import { ThemeProvider } from "./context/ThemeContext";
 import { VersionBanner } from "./components/VersionBanner/VersionBanner";
+import { ProfileView } from "./components/Settings/ProfileView";
 
 function AppContent() {
   const [currentView, setCurrentView] = useState("dashboard");
@@ -67,6 +68,8 @@ function AppContent() {
         return <SummaryReport />;
       case "suggestions":
         return <SuggestionsView />;
+      case "profile":
+        return <ProfileView />;
       default:
         if (currentView.startsWith("person-detail:")) {
           const uid = currentView.split(":")[1];

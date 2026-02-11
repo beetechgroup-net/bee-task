@@ -19,6 +19,7 @@ interface OnlineUser {
   uid: string;
   displayName: string;
   photoURL: string;
+  role?: string;
   lastSeen: number;
 }
 
@@ -288,6 +289,21 @@ export const ChatView: React.FC<ChatViewProps> = ({ onChangeView }) => {
             >
               {u.displayName?.split(" ")[0]}
             </span>
+            {u.role && (
+              <span
+                style={{
+                  fontSize: "0.6rem",
+                  color: "var(--color-text-tertiary)",
+                  marginTop: "0.1rem",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  maxWidth: "100%",
+                }}
+              >
+                {u.role}
+              </span>
+            )}
           </div>
         ))}
         {onlineUsers.length === 0 && (
@@ -355,6 +371,19 @@ export const ChatView: React.FC<ChatViewProps> = ({ onChangeView }) => {
                   onClick={() => onChangeView(`person-detail:${msg.userId}`)}
                 >
                   {msg.userEmail.split("@")[0]}
+                  {msg.userRole && (
+                    <span
+                      style={{
+                        marginLeft: "0.5rem",
+                        fontSize: "0.7rem",
+                        color: "var(--color-text-tertiary)",
+                        fontWeight: 400,
+                        textDecoration: "none",
+                      }}
+                    >
+                      ({msg.userRole})
+                    </span>
+                  )}
                 </span>
               )}
 

@@ -5,7 +5,7 @@ import { DailyStandupView } from "../Reports/DailyStandupView";
 import { SummaryReport } from "../Reports/SummaryReport";
 import { MonthlyCompletedTasks } from "./MonthlyCompletedTasks";
 import type { Task, Project } from "../../types";
-import { ArrowLeft, Mail, User } from "lucide-react";
+import { ArrowLeft, Mail, User, Briefcase } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface PersonDetailProps {
@@ -17,6 +17,7 @@ interface UserData {
   displayName: string;
   email: string;
   photoURL: string;
+  role?: string;
   lastSeen?: number;
 }
 
@@ -188,6 +189,22 @@ export const PersonDetail: React.FC<PersonDetailProps> = ({
             >
               {user.displayName}
             </h1>
+            {user.role && (
+              <div
+                style={{
+                  fontSize: "1rem",
+                  color: "var(--color-text-secondary)",
+                  marginBottom: "0.5rem",
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <Briefcase size={16} />
+                {user.role}
+              </div>
+            )}
             <div
               style={{
                 display: "flex",

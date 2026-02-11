@@ -283,10 +283,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }}
             >
               <div
+                onClick={() => onChangeView("profile")}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "0.75rem",
+                  cursor: "pointer",
+                  padding: "0.5rem",
+                  borderRadius: "var(--radius-md)",
+                  transition: "background-color 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    "var(--color-bg-tertiary)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
                 }}
               >
                 {user.photoURL ? (
