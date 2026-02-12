@@ -2,29 +2,22 @@ import React, { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X, Gift } from "lucide-react";
 import { useStore } from "../../context/StoreContext";
+import { versionConfig } from "../../config/version";
 
-interface VersionBannerProps {
-  currentVersion: string;
-  releaseNotes: React.ReactNode;
-}
-
-export const VersionBanner: React.FC<VersionBannerProps> = ({
-  currentVersion,
-  releaseNotes,
-}) => {
+export const VersionBanner: React.FC = () => {
+  const { dismissVersionBanner, checkVersionBanner } = useStore();
   const [open, setOpen] = useState(false);
-  const { setVersionSeen, isVersionSeen } = useStore();
 
   useEffect(() => {
     // Check if user has seen this version
-    if (!isVersionSeen(currentVersion)) {
+    if (checkVersionBanner(versionConfig.version)) {
       setOpen(true);
     }
-  }, [currentVersion, isVersionSeen]);
+  }, [versionConfig.version, checkVersionBanner]);
 
   const handleClose = () => {
     setOpen(false);
-    setVersionSeen(currentVersion);
+    dismissVersionBanner(versionConfig.version);
   };
 
   return (
@@ -78,7 +71,7 @@ export const VersionBanner: React.FC<VersionBannerProps> = ({
               }}
             >
               <Gift size={24} />
-              New Version: {currentVersion} Available!
+              New Version: {versionConfig.version} Available!
             </Dialog.Title>
             <Dialog.Close asChild>
               <button
@@ -102,7 +95,35 @@ export const VersionBanner: React.FC<VersionBannerProps> = ({
               color: "var(--color-text-primary)",
             }}
           >
-            {releaseNotes}
+            <div>
+              <h4
+                style={{
+                  marginBottom: "0.5rem",
+                  fontWeight: 600,
+                  color: "var(--color-accent)",
+                }}
+              >
+                🚀 What's New:
+              </h4>
+              <ul
+                style={{
+                  paddingLeft: "1.2rem",
+                  marginBottom: "1rem",
+                  listStyleType: "disc",
+                }}
+              >
+                {versionConfig.features.map(
+                  (feature: string, index: number) => (
+                    <li key={index} style={{ marginBottom: "0.5rem" }}>
+                      {feature}
+                    </li>
+                  ),
+                )}
+              </ul>
+              <p style={{ fontSize: "0.9rem", opacity: 0.8 }}>
+                Enjoy the new update! 🐝
+              </p>
+            </div>
           </div>
 
           <div
