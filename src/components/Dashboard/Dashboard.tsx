@@ -14,12 +14,6 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div>
-      <h2
-        style={{ fontSize: "1.75rem", fontWeight: 700, marginBottom: "2rem" }}
-      >
-        Dashboard
-      </h2>
-
       {priorityTasks.length > 0 && (
         <section
           style={{

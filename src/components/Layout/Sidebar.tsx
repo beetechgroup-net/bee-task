@@ -389,106 +389,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* BeeTech Tools - Icons Only */}
-      <div
-        style={{
-          marginTop: "1rem",
-          paddingTop: "1rem",
-          borderTop: "1px solid var(--color-bg-tertiary)",
-          display: "flex",
-          gap: "0.5rem",
-          justifyContent: "center",
-        }}
-      >
-        <a
-          href="https://www.beetechgroup.net"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="https://www.beetechgroup.net"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0.4rem",
-            borderRadius: "var(--radius-md)",
-            transition: "background-color 0.2s",
-            opacity: 0.7,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "var(--color-bg-tertiary)";
-            e.currentTarget.style.opacity = "1";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.opacity = "0.7";
-          }}
-        >
-          <img
-            src="https://www.google.com/s2/favicons?domain=www.beetechgroup.net&sz=64"
-            alt="BeeTech Group"
-            style={{ width: "20px", height: "20px", borderRadius: "4px" }}
-          />
-        </a>
-        <a
-          href="https://beexp.beetechgroup.net"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="https://beexp.beetechgroup.net"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0.4rem",
-            borderRadius: "var(--radius-md)",
-            transition: "background-color 0.2s",
-            opacity: 0.7,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "var(--color-bg-tertiary)";
-            e.currentTarget.style.opacity = "1";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.opacity = "0.7";
-          }}
-        >
-          <img
-            src="https://www.google.com/s2/favicons?domain=beexp.beetechgroup.net&sz=64"
-            alt="BeeXP"
-            style={{ width: "20px", height: "20px", borderRadius: "4px" }}
-          />
-        </a>
-        <a
-          href="https://beefan.beetechgroup.net"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="https://beefan.beetechgroup.net"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "0.4rem",
-            borderRadius: "var(--radius-md)",
-            transition: "background-color 0.2s",
-            opacity: 0.7,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "var(--color-bg-tertiary)";
-            e.currentTarget.style.opacity = "1";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.opacity = "0.7";
-          }}
-        >
-          <img
-            src="https://www.google.com/s2/favicons?domain=beefan.beetechgroup.net&sz=64"
-            alt="BeeFan"
-            style={{ width: "20px", height: "20px", borderRadius: "4px" }}
-          />
-        </a>
-      </div>
-
       <div
         style={{
           marginTop: "1rem",
@@ -498,18 +398,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           justifyContent: "center",
         }}
       >
-        <button
-          onClick={() => {
-            if (confirm("Reset version info? The banner will appear again.")) {
-              // We need to access resetVersionSeen from StoreContext
-              // Since Sidebar is inside StoreProvider, we can use useStore()
-              // But we didn't import it in this file yet.
-              // Let's just do a quick localStorage hack specific for this button as requested,
-              // or better, import useStore.
-              localStorage.removeItem("bee-task-version-seen-0.2.0");
-              window.location.reload();
-            }
-          }}
+        <p
           style={{
             fontSize: "0.7rem",
             color: "var(--color-text-secondary)",
@@ -519,8 +408,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             opacity: 0.5,
           }}
         >
-          v0.2.0 (Reset)
-        </button>
+          v{import.meta.env.PACKAGE_VERSION}
+        </p>
       </div>
     </div>
   );
