@@ -278,8 +278,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
-                gap: "0.75rem",
+                alignItems: "center",
+                gap: "0.5rem",
               }}
             >
               <div
@@ -292,6 +292,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   padding: "0.5rem",
                   borderRadius: "var(--radius-md)",
                   transition: "background-color 0.2s",
+                  flex: 1,
+                  overflow: "hidden", // Ensure text truncation works
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor =
@@ -300,12 +302,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = "transparent";
                 }}
+                title="View Profile"
               >
                 {user.photoURL ? (
                   <img
                     src={user.photoURL}
                     alt={user.displayName || "User"}
-                    style={{ width: 32, height: 32, borderRadius: "50%" }}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      flexShrink: 0,
+                    }}
                   />
                 ) : (
                   <div
@@ -317,6 +325,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
+                      flexShrink: 0,
                     }}
                   >
                     <UserIcon size={16} />
@@ -352,16 +361,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "0.5rem",
+                  justifyContent: "center",
                   padding: "0.5rem",
                   borderRadius: "var(--radius-md)",
                   color: "var(--color-text-secondary)",
-                  width: "100%",
                   fontSize: "0.85rem",
+                  cursor: "pointer",
+                  transition: "background-color 0.2s",
                 }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    "var(--color-bg-tertiary)";
+                  e.currentTarget.style.color = "var(--color-danger)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = "var(--color-text-secondary)";
+                }}
+                title="Sign Out"
               >
-                <LogOut size={16} />
-                Sign Out
+                <LogOut size={18} />
               </button>
             </div>
           ) : (
