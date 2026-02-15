@@ -94,9 +94,63 @@ export const Layout: React.FC<LayoutProps> = ({
             minHeight: "calc(100vh - 36px)", // Adjust min-height
             overflowY: "auto",
             width: "100%", // Ensure it takes full width
+            display: "flex",
+            flexDirection: "column",
           }}
         >
-          <div style={{ maxWidth: "1200px", margin: "0 auto" }}>{children}</div>
+          <div
+            style={{
+              maxWidth: "1200px",
+              margin: "0 auto",
+              width: "100%",
+              flex: 1,
+            }}
+          >
+            {children}
+          </div>
+          <footer
+            style={{
+              width: "100%",
+              maxWidth: "1200px",
+              margin: "0 auto",
+              display: "flex",
+              justifyContent: "flex-end",
+              paddingTop: "2rem",
+              paddingBottom: "1rem",
+              color: "var(--color-text-secondary)",
+              fontSize: "0.875rem",
+              opacity: 0.8,
+            }}
+          >
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+            >
+              <span>
+                Inspired by a{" "}
+                <a
+                  href="https://kikey.com.br"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "inherit",
+                    textDecoration: "underline",
+                    textUnderlineOffset: "4px",
+                  }}
+                >
+                  kikey website
+                </a>
+              </span>
+              <img
+                src="https://lh3.googleusercontent.com/a/ACg8ocJE1yN5iVKxalU4OFncQsCmPIWhXrY5iMJxLCMSfBCA0cEEKHJV=s96-c"
+                alt="Kikey"
+                style={{
+                  width: "24px",
+                  height: "24px",
+                  borderRadius: "50%",
+                }}
+              />
+            </div>
+          </footer>
         </main>
       </div>
     </div>
