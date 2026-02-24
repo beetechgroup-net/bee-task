@@ -5,7 +5,7 @@ import { DailyStandupView } from "../Reports/DailyStandupView";
 import { SummaryReport } from "../Reports/SummaryReport";
 import { MonthlyCompletedTasks } from "./MonthlyCompletedTasks";
 import type { Task, Project } from "../../types";
-import { ArrowLeft, Mail, User, Briefcase } from "lucide-react";
+import { ArrowLeft, Mail, User, Briefcase, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface PersonDetailProps {
@@ -18,6 +18,7 @@ interface UserData {
   email: string;
   photoURL: string;
   role?: string;
+  dailyWorkHours?: number;
   lastSeen?: number;
 }
 
@@ -205,6 +206,22 @@ export const PersonDetail: React.FC<PersonDetailProps> = ({
                 {user.role}
               </div>
             )}
+            {user.dailyWorkHours ? (
+              <div
+                style={{
+                  fontSize: "1rem",
+                  color: "var(--color-text-secondary)",
+                  marginBottom: "0.5rem",
+                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}
+              >
+                <Clock size={16} />
+                {user.dailyWorkHours} hours/day
+              </div>
+            ) : null}
             <div
               style={{
                 display: "flex",

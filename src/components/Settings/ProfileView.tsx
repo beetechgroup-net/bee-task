@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
-import { User, Mail, Briefcase, Save, Loader2 } from "lucide-react";
+import { User, Mail, Briefcase, Save, Loader2, Clock } from "lucide-react";
 
 export const ProfileView: React.FC = () => {
   const { user } = useAuth();
   const [role, setRole] = useState("");
+  const [dailyWorkHours, setDailyWorkHours] = useState<number | "">("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{
@@ -29,6 +30,7 @@ export const ProfileView: React.FC = () => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setRole(data.role || "");
+        setDailyWorkHours(data.dailyWorkHours || "");
       }
     } catch (error) {
       console.error("Error fetching user profile:", error);
@@ -48,6 +50,7 @@ export const ProfileView: React.FC = () => {
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
         role: role,
+        dailyWorkHours: dailyWorkHours === "" ? null : Number(dailyWorkHours),
       });
       setMessage({ type: "success", text: "Profile updated successfully!" });
     } catch (error) {
@@ -190,6 +193,55 @@ export const ProfileView: React.FC = () => {
               This will be displayed next to your name in chats and on your
               profile.
             </p>
+          </div>
+
+          <div>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "0.5rem",
+                fontWeight: 500,
+                color: "var(--color-text-secondary)",
+              }}
+            >
+              Daily Work Hours
+            </label>
+            <div style={{ position: "relative" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: "1rem",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  color: "var(--color-text-tertiary)",
+                }}
+              >
+                <Clock size={18} />
+              </div>
+              <input
+                type="number"
+                min="0"
+                max="24"
+                step="0.5"
+                value={dailyWorkHours}
+                onChange={(e) =>
+                  setDailyWorkHours(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+                placeholder="e.g. 8"
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  paddingLeft: "3rem",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--color-bg-tertiary)",
+                  backgroundColor: "var(--color-bg-primary)",
+                  color: "var(--color-text-primary)",
+                  fontSize: "1rem",
+                }}
+              />
+            </div>
           </div>
 
           {message && (
