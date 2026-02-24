@@ -45,11 +45,6 @@ interface StoreContextType {
   addStandardTask: (task: Omit<StandardTask, "id">) => void;
   updateStandardTask: (id: string, updates: Partial<StandardTask>) => void;
   deleteStandardTask: (id: string) => void;
-  // Version control
-  // Version control
-  checkVersionBanner: (currentVersion: string) => boolean;
-  dismissVersionBanner: (currentVersion: string) => void;
-  resetVersionSeen: () => void;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -314,20 +309,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     setStandardTasks(standardTasks.filter((t) => t.id !== id));
   };
 
-  const checkVersionBanner = (currentVersion: string) => {
-    const lastSeen = localStorage.getItem("bee-task-last-seen-version");
-    // Show if never seen (null) or if last seen version is different from current
-    return lastSeen !== currentVersion;
-  };
-
-  const dismissVersionBanner = (currentVersion: string) => {
-    localStorage.setItem("bee-task-last-seen-version", currentVersion);
-  };
-
-  const resetVersionSeen = () => {
-    localStorage.removeItem("bee-task-last-seen-version");
-    window.location.reload();
-  };
+  // Banner logic removed
 
   // Check for auto-creating standard tasks
   useEffect(() => {
@@ -414,9 +396,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
         addStandardTask,
         updateStandardTask,
         deleteStandardTask,
-        checkVersionBanner,
-        dismissVersionBanner,
-        resetVersionSeen,
       }}
     >
       {children}

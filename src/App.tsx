@@ -18,7 +18,7 @@ import { PersonDetail } from "./components/Dashboard/PersonDetail";
 import { useAuth } from "./context/AuthContext";
 import { LoginPage } from "./components/Auth/LoginPage";
 import { ThemeProvider } from "./context/ThemeContext";
-import { VersionBanner } from "./components/VersionBanner/VersionBanner";
+import { ChangelogView } from "./components/Changelog/ChangelogView";
 import { ProfileView } from "./components/Settings/ProfileView";
 
 function AppContent() {
@@ -70,6 +70,8 @@ function AppContent() {
         return <SuggestionsView />;
       case "profile":
         return <ProfileView />;
+      case "changelog":
+        return <ChangelogView />;
       default:
         if (currentView.startsWith("person-detail:")) {
           const uid = currentView.split(":")[1];
@@ -118,7 +120,6 @@ function App() {
           <NotesProvider>
             <ChatProvider>
               <AppContent />
-              <VersionBanner />
             </ChatProvider>
           </NotesProvider>
         </StoreProvider>
