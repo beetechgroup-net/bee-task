@@ -16,6 +16,7 @@ import {
   Sun,
   Moon,
   Sparkles,
+  Globe,
 } from "lucide-react";
 import classNames from "classnames";
 import { PomodoroTimer } from "../Pomodoro/PomodoroTimer";
@@ -59,6 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [user]);
 
   const menuItems = [
+    { id: "bee-dev", label: "Bee Dev", icon: <Globe size={20} /> },
     {
       id: "dashboard",
       label: "Dashboard",

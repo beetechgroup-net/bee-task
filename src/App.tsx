@@ -20,9 +20,12 @@ import { LoginPage } from "./components/Auth/LoginPage";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ChangelogView } from "./components/Changelog/ChangelogView";
 import { ProfileView } from "./components/Settings/ProfileView";
+import { BeeDevView } from "./components/BeeDev/BeeDevView";
+import { VersionBanner } from "./components/VersionBanner/VersionBanner";
 
 function AppContent() {
   const [currentView, setCurrentView] = useState("dashboard");
+  const [isBeeDevOpen, setIsBeeDevOpen] = useState(false);
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -105,10 +108,22 @@ function AppContent() {
     }
   };
 
+  const handleViewChange = (view: string) => {
+    if (view === "bee-dev") {
+      setIsBeeDevOpen(true);
+    } else {
+      setCurrentView(view);
+    }
+  };
+
   return (
-    <Layout currentView={currentView} onChangeView={setCurrentView}>
-      {renderContent()}
-    </Layout>
+    <>
+      <VersionBanner onViewChangelog={() => handleViewChange("changelog")} />
+      <Layout currentView={currentView} onChangeView={handleViewChange}>
+        {renderContent()}
+      </Layout>
+      {isBeeDevOpen && <BeeDevView onClose={() => setIsBeeDevOpen(false)} />}
+    </>
   );
 }
 
