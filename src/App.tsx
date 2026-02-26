@@ -20,12 +20,20 @@ import { LoginPage } from "./components/Auth/LoginPage";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ChangelogView } from "./components/Changelog/ChangelogView";
 import { ProfileView } from "./components/Settings/ProfileView";
-import { BeeDevView } from "./components/BeeDev/BeeDevView";
+import { WebViewModal } from "./components/WebViewModal/WebViewModal";
 import { VersionBanner } from "./components/VersionBanner/VersionBanner";
+
+interface WebViewConfig {
+  isOpen: boolean;
+  url: string;
+  title: string;
+}
 
 function AppContent() {
   const [currentView, setCurrentView] = useState("dashboard");
-  const [isBeeDevOpen, setIsBeeDevOpen] = useState(false);
+  const [webViewConfig, setWebViewConfig] = useState<WebViewConfig | null>(
+    null,
+  );
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -110,7 +118,17 @@ function AppContent() {
 
   const handleViewChange = (view: string) => {
     if (view === "bee-dev") {
-      setIsBeeDevOpen(true);
+      setWebViewConfig({
+        isOpen: true,
+        url: "https://beedev.beetechgroup.net/#content",
+        title: "Bee Dev",
+      });
+    } else if (view === "bee-farm") {
+      setWebViewConfig({
+        isOpen: true,
+        url: "https://beefarm.beetechgroup.net",
+        title: "Bee Farm",
+      });
     } else {
       setCurrentView(view);
     }
@@ -122,7 +140,13 @@ function AppContent() {
       <Layout currentView={currentView} onChangeView={handleViewChange}>
         {renderContent()}
       </Layout>
-      {isBeeDevOpen && <BeeDevView onClose={() => setIsBeeDevOpen(false)} />}
+      {webViewConfig?.isOpen && (
+        <WebViewModal
+          url={webViewConfig.url}
+          title={webViewConfig.title}
+          onClose={() => setWebViewConfig(null)}
+        />
+      )}
     </>
   );
 }

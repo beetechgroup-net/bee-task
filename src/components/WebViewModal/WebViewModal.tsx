@@ -1,11 +1,17 @@
 import React, { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 
-interface BeeDevViewProps {
+interface WebViewModalProps {
+  url: string;
+  title: string;
   onClose: () => void;
 }
 
-export const BeeDevView: React.FC<BeeDevViewProps> = ({ onClose }) => {
+export const WebViewModal: React.FC<WebViewModalProps> = ({
+  url,
+  title,
+  onClose,
+}) => {
   const [isLoading, setIsLoading] = useState(true);
 
   return (
@@ -94,8 +100,8 @@ export const BeeDevView: React.FC<BeeDevViewProps> = ({ onClose }) => {
           <X size={20} />
         </button>
         <iframe
-          src="https://beedev.beetechgroup.net/#content"
-          title="Bee Dev"
+          src={url}
+          title={title}
           onLoad={() => setIsLoading(false)}
           scrolling="no"
           style={{

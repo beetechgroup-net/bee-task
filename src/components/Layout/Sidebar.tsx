@@ -17,6 +17,7 @@ import {
   Moon,
   Sparkles,
   Globe,
+  Tractor,
 } from "lucide-react";
 import classNames from "classnames";
 import { PomodoroTimer } from "../Pomodoro/PomodoroTimer";
@@ -92,6 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <Lightbulb size={20} />,
       badge: pendingSuggestionsCount > 0 ? pendingSuggestionsCount : undefined,
     },
+    { id: "bee-farm", label: "Bee Farm", icon: <Tractor size={20} /> },
     { id: "changelog", label: "Changelog", icon: <Sparkles size={20} /> },
   ];
 
