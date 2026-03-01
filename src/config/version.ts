@@ -1,10 +1,11 @@
 export const versionHistory = [
   {
-    version: "0.4.1",
-    title: "🚀 Update 0.4.1: Working Hours",
+    version: "0.4.1-1",
+    title: "🚀 Update 0.4.1-1: Working Hours",
     features: [
       "BeeDev: You can now access BeeDev from the sidebar. Json beautify, CPF/CNPJ generator, and more. Check it out!",
       "Working Hours: You can now set your working hours in your profile settings.",
+      "Dashboard: You can now see and copy your completed tasks for the current month by categories.",
     ],
   },
   {
