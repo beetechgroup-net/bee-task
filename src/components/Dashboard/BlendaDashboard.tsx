@@ -10,6 +10,7 @@ import {
   startOfDay,
   endOfDay,
 } from "date-fns";
+import { calculateCapacityInMs } from "../../utils/capacityUtils";
 
 interface UserData {
   uid: string;
@@ -17,6 +18,7 @@ interface UserData {
   displayName: string;
   photoURL: string;
   lastSeen: number;
+  dailyWorkHours?: number;
 }
 
 interface UserTaskData {
@@ -182,6 +184,14 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
         }
       });
 
+      const capacityMs = userData.user.dailyWorkHours
+        ? calculateCapacityInMs(
+            new Date(rangeStart),
+            new Date(rangeEnd),
+            userData.user.dailyWorkHours,
+          )
+        : 0;
+
       return {
         ...userData,
         recentTasks, // Still show most recent tasks regardless of filter? Or filter recent active?
@@ -190,6 +200,7 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
         // Detailed req: "Filtro de intervalo de data para ver o taotal time logged, total time by Project e total time by type"
         // It didn't explicitly ask to filter the "Recent Activity" list, but "Team Detail" has "Total Worked" which SHOULD be filtered.
         totalDuration,
+        capacityMs,
         totalDurationByProject,
         totalDurationByType,
       };
@@ -667,7 +678,7 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
                     </div>
                   </div>
                 </div>
-                <div style={{ textAlign: "right" }}>
+                <div style={{ textAlign: "right", minWidth: "150px" }}>
                   <div
                     style={{
                       fontSize: "0.9rem",
@@ -678,7 +689,43 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
                   </div>
                   <div style={{ fontSize: "1.25rem", fontWeight: 600 }}>
                     {formatDuration(data.totalDuration)}
+                    {data.capacityMs > 0 && (
+                      <span
+                        style={{
+                          fontSize: "0.9rem",
+                          fontWeight: 500,
+                          color: "var(--color-text-tertiary)",
+                          marginLeft: "0.5rem",
+                        }}
+                      >
+                        / {formatDuration(data.capacityMs)}
+                      </span>
+                    )}
                   </div>
+                  {data.capacityMs > 0 && (
+                    <div
+                      style={{
+                        height: "6px",
+                        backgroundColor: "var(--color-bg-tertiary)",
+                        borderRadius: "3px",
+                        overflow: "hidden",
+                        marginTop: "0.5rem",
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${Math.min((data.totalDuration / data.capacityMs) * 100, 100)}%`,
+                          backgroundColor:
+                            data.totalDuration >= data.capacityMs
+                              ? "var(--color-success)"
+                              : "var(--color-accent)",
+                          borderRadius: "3px",
+                          transition: "width 0.3s ease",
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
