@@ -10,19 +10,58 @@ import {
   formatDuration,
   formatDate,
 } from "../../utils/dateUtils";
+import { calculateCapacityInMs } from "../../utils/capacityUtils";
 import type { Task } from "../../types";
+import { useAuth } from "../../context/AuthContext";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import { useEffect } from "react";
 
 type TimeRange = "day" | "week" | "month";
 
-export const SummaryReport: React.FC<{ tasks?: Task[]; projects?: any[] }> = ({
+interface SummaryReportProps {
+  tasks?: Task[];
+  projects?: any[];
+  dailyWorkHours?: number;
+  userId?: string;
+}
+
+export const SummaryReport: React.FC<SummaryReportProps> = ({
   tasks: propTasks,
   projects: propProjects,
+  dailyWorkHours: propDailyWorkHours,
+  userId: propUserId,
 }) => {
+  const { user: authUser } = useAuth();
   const { tasks: storeTasks, projects: storeProjects } = useStore();
   const tasks = propTasks || storeTasks;
   const projects = propProjects || storeProjects;
   const [range, setRange] = useState<TimeRange>("day");
   const [referenceDate] = useState(new Date());
+  const [fetchedHours, setFetchedHours] = useState<number | null>(null);
+
+  const targetUserId = propUserId || authUser?.uid;
+  const defaultHours = propDailyWorkHours ?? fetchedHours ?? 0;
+
+  useEffect(() => {
+    const fetchHours = async () => {
+      // Don't fetch if provided via prop or no target user
+      if (propDailyWorkHours !== undefined || !targetUserId) return;
+      try {
+        const userRef = doc(db, "users", targetUserId);
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.dailyWorkHours) {
+            setFetchedHours(data.dailyWorkHours);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching dailyWorkHours:", err);
+      }
+    };
+    fetchHours();
+  }, [targetUserId, propDailyWorkHours]);
 
   const filterTasksByRange = (tasks: Task[], range: TimeRange, date: Date) => {
     return tasks.filter((task) => {
@@ -91,6 +130,23 @@ export const SummaryReport: React.FC<{ tasks?: Task[]; projects?: any[] }> = ({
     (a, b) => a + b,
     0,
   );
+
+  // Calculate Capacity
+  let capacityMs = 0;
+  if (defaultHours > 0) {
+    let start, end;
+    if (range === "day") {
+      start = referenceDate;
+      end = referenceDate;
+    } else if (range === "week") {
+      start = startOfWeek(referenceDate);
+      end = endOfWeek(referenceDate);
+    } else {
+      start = startOfMonth(referenceDate);
+      end = endOfMonth(referenceDate);
+    }
+    capacityMs = calculateCapacityInMs(start, end, defaultHours);
+  }
 
   // Reusable Chart Component (Simple CSS Bar Chart)
   const SimpleBarChart = ({
@@ -218,17 +274,55 @@ export const SummaryReport: React.FC<{ tasks?: Task[]; projects?: any[] }> = ({
             marginTop: "0.5rem",
           }}
         >
-          {formatDuration(totalDuration)}{" "}
+          {formatDuration(totalDuration)}
+          {capacityMs > 0 && (
+            <span
+              style={{
+                fontSize: "1.5rem",
+                color: "var(--color-text-tertiary)",
+                marginLeft: "0.5rem",
+              }}
+            >
+              / {formatDuration(capacityMs)}
+            </span>
+          )}
           <span
             style={{
               fontSize: "1rem",
               color: "var(--color-text-secondary)",
               fontWeight: 400,
+              marginLeft: "0.5rem",
             }}
           >
             total logged
           </span>
         </div>
+
+        {capacityMs > 0 && (
+          <div
+            style={{
+              height: "8px",
+              backgroundColor: "var(--color-bg-tertiary)",
+              borderRadius: "4px",
+              overflow: "hidden",
+              position: "relative",
+              marginTop: "1rem",
+            }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${Math.min((totalDuration / capacityMs) * 100, 100)}%`,
+                backgroundColor:
+                  totalDuration >= capacityMs
+                    ? "var(--color-success)"
+                    : "var(--color-accent)",
+                borderRadius: "4px",
+                transition: "width 0.3s ease",
+              }}
+            />
+          </div>
+        )}
       </div>
 
       <div

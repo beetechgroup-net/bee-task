@@ -278,7 +278,12 @@ export const PersonDetail: React.FC<PersonDetailProps> = ({
             border: "1px solid var(--color-bg-tertiary)",
           }}
         >
-          <SummaryReport tasks={tasks} projects={projects} />
+          <SummaryReport
+            tasks={tasks}
+            projects={projects}
+            dailyWorkHours={user.dailyWorkHours}
+            userId={userId}
+          />
         </section>
 
         {/* Monthly Completed Section */}
