@@ -71,3 +71,27 @@ export interface Note {
   createdAt: number;
   updatedAt: number;
 }
+
+export interface OrganizationRequest {
+  userId: string;
+  userName: string | null;
+  userEmail: string | null;
+  requestedAt: number;
+}
+
+export interface OrganizationMember {
+  userId: string;
+  userName: string | null;
+  userEmail: string | null;
+  joinedAt: number;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  description: string;
+  ownerId: string;
+  members: OrganizationMember[];
+  pendingRequests: OrganizationRequest[];
+  createdAt: number;
+}

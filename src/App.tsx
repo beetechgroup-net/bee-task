@@ -22,6 +22,7 @@ import { ChangelogView } from "./components/Changelog/ChangelogView";
 import { ProfileView } from "./components/Settings/ProfileView";
 import { WebViewModal } from "./components/WebViewModal/WebViewModal";
 import { VersionBanner } from "./components/VersionBanner/VersionBanner";
+import { OrganizationView } from "./components/Organization/OrganizationView";
 
 interface WebViewConfig {
   isOpen: boolean;
@@ -69,6 +70,8 @@ function AppContent() {
         return <CalendarView />;
       case "projects":
         return <ProjectsView />;
+      case "organizations":
+        return <OrganizationView />;
       case "standard-tasks":
         return <StandardTasksView />;
       case "notes":

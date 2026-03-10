@@ -79,6 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: unreadCount > 0 ? unreadCount : undefined,
     },
     { id: "projects", label: "Projects", icon: <FolderKanban size={20} /> },
+    { id: "organizations", label: "Organizations", icon: <Globe size={20} /> },
     { id: "tasks", label: "My Tasks", icon: <CheckSquare size={20} /> },
     {
       id: "standard-tasks",
