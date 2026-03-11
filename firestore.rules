@@ -30,5 +30,10 @@ service cloud.firestore {
     match /organizations/{orgId} {
       allow read, write: if request.auth != null;
     }
+
+    // New rule for organization invites
+    match /organization_invites/{inviteId} {
+      allow read, write: if request.auth != null;
+    }
   }
 }

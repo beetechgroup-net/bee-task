@@ -10,6 +10,11 @@ interface OrganizationListProps {
   organizations: Organization[];
   showRequestBtn?: boolean;
   onRequestJoin?: (orgId: string) => Promise<void>;
+  onInviteMember?: (
+    orgId: string,
+    orgName: string,
+    email: string,
+  ) => Promise<void>;
   onRemoveMember?: (orgId: string, member: OrganizationMember) => Promise<void>;
   onAddProject?: (orgId: string, name: string, color: string) => Promise<void>;
   onRemoveProject?: (
@@ -23,6 +28,7 @@ export const OrganizationList: React.FC<OrganizationListProps> = ({
   organizations,
   showRequestBtn,
   onRequestJoin,
+  onInviteMember,
   onRemoveMember,
   onAddProject,
   onRemoveProject,
@@ -41,6 +47,10 @@ export const OrganizationList: React.FC<OrganizationListProps> = ({
   const [removingProjectId, setRemovingProjectId] = useState<string | null>(
     null,
   );
+  const [inviteEmails, setInviteEmails] = useState<{ [orgId: string]: string }>(
+    {},
+  );
+  const [isInvitingId, setIsInvitingId] = useState<string | null>(null);
 
   if (organizations.length === 0) {
     return (
@@ -89,6 +99,30 @@ export const OrganizationList: React.FC<OrganizationListProps> = ({
       alert("Failed to remove member.");
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const handleInviteMember = async (
+    orgId: string,
+    orgName: string,
+    e: React.FormEvent,
+  ) => {
+    e.preventDefault();
+    if (!onInviteMember) return;
+
+    const email = inviteEmails[orgId];
+    if (!email || !email.trim()) return;
+
+    setIsInvitingId(orgId);
+    try {
+      await onInviteMember(orgId, orgName, email);
+      setInviteEmails((prev) => ({ ...prev, [orgId]: "" }));
+      alert("Invitation sent successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to send invitation.");
+    } finally {
+      setIsInvitingId(null);
     }
   };
 
@@ -340,6 +374,73 @@ export const OrganizationList: React.FC<OrganizationListProps> = ({
                         </div>
                       );
                     })}
+
+                    {/* Invite Member Form for Owners */}
+                    {isOwner && onInviteMember && (
+                      <form
+                        onSubmit={(e) =>
+                          handleInviteMember(org.id, org.name, e)
+                        }
+                        style={{
+                          display: "flex",
+                          gap: "0.5rem",
+                          alignItems: "center",
+                          marginTop: "0.5rem",
+                          paddingTop: "0.75rem",
+                          borderTop: "1px dashed var(--color-bg-tertiary)",
+                        }}
+                      >
+                        <input
+                          type="email"
+                          placeholder="Invite via email..."
+                          value={inviteEmails[org.id] || ""}
+                          onChange={(e) =>
+                            setInviteEmails((prev) => ({
+                              ...prev,
+                              [org.id]: e.target.value,
+                            }))
+                          }
+                          required
+                          style={{
+                            flex: 1,
+                            padding: "0.5rem",
+                            borderRadius: "var(--radius-md)",
+                            border: "1px solid var(--color-bg-tertiary)",
+                            backgroundColor: "var(--color-bg-primary)",
+                            color: "var(--color-text-primary)",
+                            fontSize: "0.875rem",
+                          }}
+                        />
+                        <button
+                          type="submit"
+                          disabled={
+                            isInvitingId === org.id ||
+                            !(inviteEmails[org.id] || "").trim()
+                          }
+                          style={{
+                            padding: "0.5rem 1rem",
+                            backgroundColor: "var(--color-accent)",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "var(--radius-md)",
+                            cursor:
+                              isInvitingId === org.id ||
+                              !(inviteEmails[org.id] || "").trim()
+                                ? "not-allowed"
+                                : "pointer",
+                            fontSize: "0.875rem",
+                            fontWeight: 500,
+                            opacity:
+                              isInvitingId === org.id ||
+                              !(inviteEmails[org.id] || "").trim()
+                                ? 0.7
+                                : 1,
+                          }}
+                        >
+                          {isInvitingId === org.id ? "Sending..." : "Invite"}
+                        </button>
+                      </form>
+                    )}
                   </div>
                 )}
               </div>

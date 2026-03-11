@@ -8,6 +8,7 @@ import {
   arrayRemove,
   onSnapshot,
   query,
+  where,
 } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { v4 as uuidv4 } from "uuid";
@@ -16,20 +17,22 @@ import type {
   OrganizationRequest,
   OrganizationMember,
   OrganizationProject,
+  OrganizationInvite,
 } from "../types";
 import { useAuth } from "../context/AuthContext";
 
 export function useOrganizations() {
   const { user } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [invites, setInvites] = useState<OrganizationInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Subscribe to all organizations to keep lists updated
   useEffect(() => {
-    const q = query(collection(db, "organizations"));
-    const unsubscribe = onSnapshot(
-      q,
+    const qOrgs = query(collection(db, "organizations"));
+    const unsubscribeOrgs = onSnapshot(
+      qOrgs,
       (snapshot) => {
         const orgs: Organization[] = [];
         snapshot.forEach((doc) => {
@@ -45,8 +48,36 @@ export function useOrganizations() {
       },
     );
 
-    return () => unsubscribe();
-  }, []);
+    let unsubscribeInvites = () => {};
+    if (user?.email) {
+      const qInvites = query(
+        collection(db, "organization_invites"),
+        where("email", "==", user.email),
+        where("status", "==", "pending"),
+      );
+      unsubscribeInvites = onSnapshot(
+        qInvites,
+        (snapshot) => {
+          const fetchedInvites: OrganizationInvite[] = [];
+          snapshot.forEach((doc) => {
+            fetchedInvites.push({
+              id: doc.id,
+              ...doc.data(),
+            } as OrganizationInvite);
+          });
+          setInvites(fetchedInvites);
+        },
+        (err) => {
+          console.error("Error fetching invites:", err);
+        },
+      );
+    }
+
+    return () => {
+      unsubscribeOrgs();
+      unsubscribeInvites();
+    };
+  }, [user?.email]);
 
   const createOrganization = async (name: string, description: string) => {
     if (!user) throw new Error("Must be logged in to create an organization.");
@@ -183,8 +214,76 @@ export function useOrganizations() {
     }
   };
 
+  const inviteMember = async (
+    orgId: string,
+    orgName: string,
+    email: string,
+  ) => {
+    if (!user) throw new Error("Must be logged in.");
+
+    const inviteId = uuidv4();
+    const newInvite: OrganizationInvite = {
+      id: inviteId,
+      orgId,
+      orgName,
+      email: email.trim().toLowerCase(),
+      invitedAt: Date.now(),
+      status: "pending",
+    };
+
+    try {
+      await setDoc(doc(db, "organization_invites", inviteId), newInvite);
+    } catch (err) {
+      console.error("Error inviting member:", err);
+      throw new Error("Failed to invite member.");
+    }
+  };
+
+  const acceptInvite = async (invite: OrganizationInvite) => {
+    if (!user) throw new Error("Must be logged in.");
+
+    const newMember: OrganizationMember = {
+      userId: user.uid,
+      userName: user.displayName,
+      userEmail: user.email,
+      joinedAt: Date.now(),
+    };
+
+    try {
+      // 1. Add user to org members
+      const orgRef = doc(db, "organizations", invite.orgId);
+      await updateDoc(orgRef, {
+        members: arrayUnion(newMember),
+      });
+
+      // 2. Mark invite as accepted (or we could delete it)
+      const inviteRef = doc(db, "organization_invites", invite.id);
+      await updateDoc(inviteRef, {
+        status: "accepted",
+      });
+    } catch (err) {
+      console.error("Error accepting invite:", err);
+      throw new Error("Failed to accept invite.");
+    }
+  };
+
+  const declineInvite = async (invite: OrganizationInvite) => {
+    if (!user) throw new Error("Must be logged in.");
+
+    try {
+      const inviteRef = doc(db, "organization_invites", invite.id);
+      await updateDoc(inviteRef, {
+        status: "declined", // or we could delete the document
+      });
+    } catch (err) {
+      console.error("Error declining invite:", err);
+      throw new Error("Failed to decline invite.");
+    }
+  };
+
   return {
     organizations,
+    invites,
     loading,
     error,
     createOrganization,
@@ -194,5 +293,8 @@ export function useOrganizations() {
     removeMember,
     addProject,
     removeProject,
+    inviteMember,
+    acceptInvite,
+    declineInvite,
   };
 }

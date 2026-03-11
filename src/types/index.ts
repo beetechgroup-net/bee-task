@@ -58,6 +58,15 @@ export interface OrganizationRequest {
   requestedAt: number;
 }
 
+export interface OrganizationInvite {
+  id: string; // The invite doc ID
+  orgId: string;
+  orgName: string;
+  email: string;
+  invitedAt: number;
+  status: "pending" | "accepted" | "declined";
+}
+
 export interface OrganizationMember {
   userId: string;
   userName: string | null;

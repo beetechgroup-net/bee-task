@@ -2,15 +2,17 @@ import React, { useState } from "react";
 import { CreateOrganizationForm } from "./CreateOrganizationForm";
 import { OrganizationList } from "./OrganizationList";
 import { OrganizationRequests } from "./OrganizationRequests";
+import { OrganizationInvites } from "./OrganizationInvites";
 import { useOrganizations } from "../../hooks/useOrganizations";
 import { useAuth } from "../../context/AuthContext";
 
-type Tab = "my-orgs" | "explore" | "requests" | "create";
+type Tab = "my-orgs" | "explore" | "requests" | "invitations" | "create";
 
 export const OrganizationView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>("my-orgs");
   const {
     organizations,
+    invites,
     loading,
     error,
     requestJoinOrganization,
@@ -19,6 +21,9 @@ export const OrganizationView: React.FC = () => {
     removeMember,
     addProject,
     removeProject,
+    inviteMember,
+    acceptInvite,
+    declineInvite,
   } = useOrganizations();
   const { user } = useAuth();
 
@@ -150,6 +155,43 @@ export const OrganizationView: React.FC = () => {
           )}
           )
         </button>
+        <button
+          onClick={() => setActiveTab("invitations")}
+          style={{
+            padding: "0.5rem 1rem",
+            background: "none",
+            border: "none",
+            borderBottom:
+              activeTab === "invitations"
+                ? "2px solid var(--color-accent)"
+                : "2px solid transparent",
+            color:
+              activeTab === "invitations"
+                ? "var(--color-accent)"
+                : "var(--color-text-secondary)",
+            cursor: "pointer",
+            fontWeight: 500,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          Invitations
+          {invites.length > 0 && (
+            <span
+              style={{
+                backgroundColor: "var(--color-accent)",
+                color: "white",
+                padding: "2px 8px",
+                borderRadius: "12px",
+                fontSize: "0.75rem",
+                fontWeight: "bold",
+              }}
+            >
+              {invites.length}
+            </span>
+          )}
+        </button>
       </div>
 
       <div>
@@ -160,6 +202,7 @@ export const OrganizationView: React.FC = () => {
           <OrganizationList
             organizations={myOrgs}
             showRequestBtn={false}
+            onInviteMember={inviteMember}
             onRemoveMember={removeMember}
             onAddProject={addProject}
             onRemoveProject={removeProject}
@@ -179,6 +222,16 @@ export const OrganizationView: React.FC = () => {
             organizations={orgsWithRequests}
             onAccept={acceptRequest}
             onReject={rejectRequest}
+          />
+        )}
+        {activeTab === "invitations" && (
+          <OrganizationInvites
+            invites={invites}
+            onAccept={async (inv) => {
+              await acceptInvite(inv);
+              setActiveTab("my-orgs");
+            }}
+            onDecline={declineInvite}
           />
         )}
       </div>

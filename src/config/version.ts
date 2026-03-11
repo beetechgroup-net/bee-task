@@ -1,5 +1,16 @@
 export const versionHistory = [
   {
+    version: "0.5.0",
+    title: "🚀 Update 0.5.0: Criação de Organização",
+    features: [
+      "Criação de organização: Agora você pode criar sua própria organização.",
+      "Convites: Envie convites por e-mail para amigos e colegas participarem da sua organização.",
+      "Projetos: Crie e gerencie projetos de forma centralizada dentro de cada organização.",
+      "Notificações: Receba alertas diretamente na barra lateral quando receber um convite ou solicitação de entrada.",
+      "Projetos Globais: Os projetos agora são compartilhados entre os membros da organização.",
+    ],
+  },
+  {
     version: "0.4.1-2",
     title: "🚀 Update 0.4.1-2: Working Hours",
     features: [
