@@ -35,27 +35,6 @@ export interface Task {
   history?: TaskHistory[];
   createdAt: number;
 }
-
-export interface StandardTaskInterval {
-  startTime: string; // "HH:mm"
-  endTime: string; // "HH:mm"
-}
-
-export interface StandardTask {
-  id: string;
-  title: string;
-  description?: string;
-  projectId?: string;
-  type?: TaskType;
-  priority?: Priority;
-  intervals?: StandardTaskInterval[]; // Optional for backward compatibility during dev, but ideally required
-  autoCreate?: boolean; // Whether to automatically create a task from this standard task
-  lastAutoCreated?: number; // Timestamp of the last time this task was automatically created
-  // Deprecated fields (optional to keep for a moment or remove)
-  startTime?: string;
-  endTime?: string;
-}
-
 export interface Folder {
   id: string;
   name: string;
@@ -70,4 +49,46 @@ export interface Note {
   folderId: string;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface OrganizationRequest {
+  userId: string;
+  userName: string | null;
+  userEmail: string | null;
+  requestedAt: number;
+}
+
+export interface OrganizationInvite {
+  id: string; // The invite doc ID
+  orgId: string;
+  orgName: string;
+  email: string;
+  invitedAt: number;
+  status: "pending" | "accepted" | "declined";
+}
+
+export interface OrganizationMember {
+  userId: string;
+  userName: string | null;
+  userEmail: string | null;
+  joinedAt: number;
+}
+
+export interface OrganizationProject {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: number;
+  createdBy: string;
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  description: string;
+  ownerId: string;
+  members: OrganizationMember[];
+  pendingRequests: OrganizationRequest[];
+  projects?: OrganizationProject[];
+  createdAt: number;
 }

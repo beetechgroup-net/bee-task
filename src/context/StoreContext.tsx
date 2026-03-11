@@ -1,15 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type {
-  Project,
-  Task,
-  TaskType,
-  StandardTask,
-  TaskHistory,
-} from "../types";
+import type { Task, TaskType, TaskHistory } from "../types";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useFirestoreSync } from "../hooks/useFirestoreSync";
 import { useAuth } from "./AuthContext";
+import { useOrganizations } from "../hooks/useOrganizations";
+import type { OrganizationProject } from "../types";
 
 // Extended window interface for Web Speech API
 declare global {
@@ -21,7 +17,6 @@ declare global {
 
 interface StoreContextType {
   tasks: Task[];
-  projects: Project[];
 
   addTask: (
     title: string,
@@ -35,16 +30,10 @@ interface StoreContextType {
   deleteTask: (id: string) => void;
   toggleTaskLog: (id: string) => void;
 
-  addProject: (name: string, color: string) => void;
-  updateProject: (id: string, updates: Partial<Project>) => void;
-  deleteProject: (id: string) => void;
-
   getTaskDuration: (task: Task) => number;
 
-  standardTasks: StandardTask[];
-  addStandardTask: (task: Omit<StandardTask, "id">) => void;
-  updateStandardTask: (id: string, updates: Partial<StandardTask>) => void;
-  deleteStandardTask: (id: string) => void;
+  projects: OrganizationProject[];
+
   // Version control
   checkVersionBanner: (currentVersion: string) => boolean;
   dismissVersionBanner: (currentVersion: string) => void;
@@ -53,22 +42,10 @@ interface StoreContextType {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
-const DEFAULT_PROJECTS: Project[] = [
-  { id: "default", name: "General", color: "#94a3b8" },
-];
-
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [tasks, setTasks] = useLocalStorage<Task[]>("tasks", []);
-  const [projects, setProjects] = useLocalStorage<Project[]>(
-    "projects",
-    DEFAULT_PROJECTS,
-  );
-  const [standardTasks, setStandardTasks] = useLocalStorage<StandardTask[]>(
-    "standardTasks",
-    [],
-  );
 
   useEffect(() => {
     console.log(`[StoreContext] Current tasks state:`, tasks.length, "items");
@@ -84,13 +61,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Sync to Firestore
   useFirestoreSync<Task[]>("tasks", tasks, setTasks, user?.uid);
-  useFirestoreSync<Project[]>("projects", projects, setProjects, user?.uid);
-  useFirestoreSync<StandardTask[]>(
-    "standardTasks",
-    standardTasks,
-    setStandardTasks,
-    user?.uid,
-  );
+
+  const { organizations } = useOrganizations();
+  const projects = React.useMemo(() => {
+    const allProjects: OrganizationProject[] = [];
+    organizations.forEach((org) => {
+      const isMember = org.members?.some((m) => m.userId === user?.uid);
+      if (isMember && org.projects) {
+        allProjects.push(...org.projects);
+      }
+    });
+    return allProjects;
+  }, [organizations, user]);
 
   const [, setTick] = useState(0);
 
@@ -275,21 +257,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
-  const addProject = (name: string, color: string) => {
-    setProjects([...projects, { id: uuidv4(), name, color }]);
-  };
-
-  const updateProject = (id: string, updates: Partial<Project>) => {
-    setProjects(projects.map((p) => (p.id === id ? { ...p, ...updates } : p)));
-  };
-
-  const deleteProject = (id: string) => {
-    // Optionally remove tasks associated with this project or reassign them?
-    // For now, let's keep it simple and just delete the project.
-    // Tasks might show "Unknown Project" which we handled in TaskCard.
-    setProjects(projects.filter((p) => p.id !== id));
-  };
-
   const getTaskDuration = (task: Task) => {
     return task.logs.reduce((acc, log) => {
       if (log.endTime) {
@@ -297,20 +264,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       return acc + (Date.now() - log.startTime);
     }, 0);
-  };
-
-  const addStandardTask = (task: Omit<StandardTask, "id">) => {
-    setStandardTasks([...standardTasks, { ...task, id: uuidv4() }]);
-  };
-
-  const updateStandardTask = (id: string, updates: Partial<StandardTask>) => {
-    setStandardTasks(
-      standardTasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-    );
-  };
-
-  const deleteStandardTask = (id: string) => {
-    setStandardTasks(standardTasks.filter((t) => t.id !== id));
   };
 
   const checkVersionBanner = (currentVersion: string) => {
@@ -328,91 +281,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     window.location.reload();
   };
 
-  // Check for auto-creating standard tasks
-  useEffect(() => {
-    const checkAndCreateAutoTasks = () => {
-      const now = new Date();
-      const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-
-      // Only run on weekdays (Mon-Fri)
-      if (dayOfWeek === 0 || dayOfWeek === 6) return;
-
-      const todayStart = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-      ).getTime();
-
-      const tasksToCreate: Task[] = [];
-      const standardTasksUpdates: { id: string; lastAutoCreated: number }[] =
-        [];
-
-      standardTasks.forEach((st) => {
-        if (!st.autoCreate) return;
-
-        // Check if already created today
-        if (st.lastAutoCreated && st.lastAutoCreated >= todayStart) {
-          return;
-        }
-
-        // Create Task
-        const newTask: Task = {
-          id: uuidv4(),
-          title: st.title,
-          description: st.description,
-          projectId: st.projectId || projects[0]?.id || "default",
-          type: st.type || "Development",
-          priority: st.priority || "medium",
-          status: "todo",
-          logs: [],
-          history: [
-            {
-              id: uuidv4(),
-              action: "create",
-              timestamp: Date.now(),
-            },
-          ],
-          createdAt: Date.now(),
-        };
-
-        tasksToCreate.push(newTask);
-        standardTasksUpdates.push({ id: st.id, lastAutoCreated: Date.now() });
-      });
-
-      if (tasksToCreate.length > 0) {
-        setTasks((prev) => [...prev, ...tasksToCreate]);
-        setStandardTasks((prev) =>
-          prev.map((st) => {
-            const update = standardTasksUpdates.find((u) => u.id === st.id);
-            return update
-              ? { ...st, lastAutoCreated: update.lastAutoCreated }
-              : st;
-          }),
-        );
-      }
-    };
-
-    // Check immediately when dependencies change (e.g. on mount or when standardTasks update)
-    checkAndCreateAutoTasks();
-  }, [standardTasks, projects, setStandardTasks, setTasks]);
-
   return (
     <StoreContext.Provider
       value={{
         tasks,
-        projects,
         addTask,
         updateTask,
         deleteTask,
         toggleTaskLog,
-        addProject,
-        updateProject,
-        deleteProject,
         getTaskDuration,
-        standardTasks,
-        addStandardTask,
-        updateStandardTask,
-        deleteStandardTask,
+        projects,
         checkVersionBanner,
         dismissVersionBanner,
         resetVersionSeen,

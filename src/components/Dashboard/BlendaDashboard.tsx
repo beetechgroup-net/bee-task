@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { TaskCard } from "../Task/TaskCard";
 import { useAuth } from "../../context/AuthContext";
+import { useStore } from "../../context/StoreContext";
 import { db } from "../../lib/firebase";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import type { Task, Project, TaskLog } from "../../types";
@@ -24,7 +25,6 @@ interface UserData {
 interface UserTaskData {
   user: UserData;
   allTasks: Task[]; // Store all tasks to filter client-side
-  projects: Project[];
 }
 
 interface BlendaDashboardProps {
@@ -38,6 +38,7 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usersData, setUsersData] = useState<UserTaskData[]>([]);
+  const { projects: globalProjects } = useStore();
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: startOfMonth(new Date()).toISOString().split("T")[0],
     end: new Date().toISOString().split("T")[0],
@@ -81,24 +82,9 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
             );
           }
 
-          // Fetch Projects
-          const projectsDocRef = doc(db, "users", uid, "data", "projects");
-          let userProjects: Project[] = [];
-          try {
-            const projectsSnap = await getDoc(projectsDocRef);
-            if (projectsSnap.exists()) {
-              userProjects = projectsSnap.data().items as Project[];
-            }
-          } catch (e: any) {
-            console.error(
-              `Error fetching projects for ${safeUserData.email}: ${e.message}`,
-            );
-          }
-
           allUsersData.push({
             user: safeUserData,
             allTasks: tasks,
-            projects: userProjects,
           });
         }
 
@@ -213,9 +199,7 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
     );
 
     const allProjectsMap = new Map<string, Project>();
-    processedUsers.forEach((ud) => {
-      ud.projects.forEach((p) => allProjectsMap.set(p.id, p));
-    });
+    globalProjects.forEach((p) => allProjectsMap.set(p.id, p));
 
     const globalProjectStats = processedUsers.reduce(
       (acc, d) => {
@@ -752,7 +736,7 @@ export const BlendaDashboard: React.FC<BlendaDashboardProps> = ({
                     }}
                   >
                     {data.recentTasks.map((task) => {
-                      const project = data.projects.find(
+                      const project = globalProjects.find(
                         (p) => p.id === task.projectId,
                       );
                       return (

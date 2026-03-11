@@ -2,11 +2,9 @@ import React from "react";
 import {
   LayoutDashboard,
   CheckSquare,
-  ClipboardList,
   StickyNote,
   MessageSquare,
   Activity,
-  FolderKanban,
   Calendar,
   LogIn,
   LogOut,
@@ -44,20 +42,56 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [showPomodoro, setShowPomodoro] = React.useState(false);
   const [pendingSuggestionsCount, setPendingSuggestionsCount] =
     React.useState(0);
+  const [pendingOrgInvitesCount, setPendingOrgInvitesCount] = React.useState(0);
+  const [pendingOrgRequestsCount, setPendingOrgRequestsCount] =
+    React.useState(0);
 
   React.useEffect(() => {
     if (!user) return;
 
-    const q = query(
+    // Suggestions
+    const qSuggestions = query(
       collection(db, "suggestions"),
       where("status", "==", "pending"),
     );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubSuggestions = onSnapshot(qSuggestions, (snapshot) => {
       setPendingSuggestionsCount(snapshot.size);
     });
 
-    return () => unsubscribe();
+    // Organization Invites (inbound to user)
+    let unsubInvites = () => {};
+    if (user.email) {
+      const qInvites = query(
+        collection(db, "organization_invites"),
+        where("email", "==", user.email),
+        where("status", "==", "pending"),
+      );
+      unsubInvites = onSnapshot(qInvites, (snapshot) => {
+        setPendingOrgInvitesCount(snapshot.size);
+      });
+    }
+
+    // Organization Requests (inbound from others to orgs owned by user)
+    const qOrgs = query(
+      collection(db, "organizations"),
+      where("ownerId", "==", user.uid),
+    );
+    const unsubOrgs = onSnapshot(qOrgs, (snapshot) => {
+      let reqCount = 0;
+      snapshot.forEach((doc) => {
+        const orgData = doc.data();
+        if (orgData.pendingRequests && Array.isArray(orgData.pendingRequests)) {
+          reqCount += orgData.pendingRequests.length;
+        }
+      });
+      setPendingOrgRequestsCount(reqCount);
+    });
+
+    return () => {
+      unsubSuggestions();
+      unsubInvites();
+      unsubOrgs();
+    };
   }, [user]);
 
   const menuItems = [
@@ -78,13 +112,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <MessageSquare size={20} />,
       badge: unreadCount > 0 ? unreadCount : undefined,
     },
-    { id: "projects", label: "Projects", icon: <FolderKanban size={20} /> },
-    { id: "tasks", label: "My Tasks", icon: <CheckSquare size={20} /> },
     {
-      id: "standard-tasks",
-      label: "Standard Tasks",
-      icon: <ClipboardList size={20} />,
+      id: "organizations",
+      label: "Organizations",
+      icon: <Globe size={20} />,
+      badge:
+        pendingOrgInvitesCount + pendingOrgRequestsCount > 0
+          ? pendingOrgInvitesCount + pendingOrgRequestsCount
+          : undefined,
     },
+    { id: "tasks", label: "My Tasks", icon: <CheckSquare size={20} /> },
     { id: "calendar", label: "Calendar", icon: <Calendar size={20} /> },
     { id: "notes", label: "Notes", icon: <StickyNote size={20} /> },
     {
