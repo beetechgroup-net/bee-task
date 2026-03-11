@@ -4,7 +4,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { DailyStandupView } from "../Reports/DailyStandupView";
 import { SummaryReport } from "../Reports/SummaryReport";
 import { MonthlyCompletedTasks } from "./MonthlyCompletedTasks";
-import type { Task, Project } from "../../types";
+import type { Task } from "../../types";
 import { ArrowLeft, Mail, User, Briefcase, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -28,7 +28,7 @@ export const PersonDetail: React.FC<PersonDetailProps> = ({
 }) => {
   const [user, setUser] = useState<UserData | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,13 +54,6 @@ export const PersonDetail: React.FC<PersonDetailProps> = ({
         const tasksSnap = await getDoc(tasksDocRef);
         if (tasksSnap.exists()) {
           setTasks(tasksSnap.data().items as Task[]);
-        }
-
-        // Fetch Projects
-        const projectsDocRef = doc(db, "users", userId, "data", "projects");
-        const projectsSnap = await getDoc(projectsDocRef);
-        if (projectsSnap.exists()) {
-          setProjects(projectsSnap.data().items as Project[]);
         }
       } catch (err: any) {
         console.error("Error fetching person details:", err);
@@ -280,7 +273,6 @@ export const PersonDetail: React.FC<PersonDetailProps> = ({
         >
           <SummaryReport
             tasks={tasks}
-            projects={projects}
             dailyWorkHours={user.dailyWorkHours}
             userId={userId}
           />
