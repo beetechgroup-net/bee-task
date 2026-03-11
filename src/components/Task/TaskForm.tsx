@@ -14,7 +14,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   onCancel,
   initialTask,
 }) => {
-  const { addTask, updateTask, projects, standardTasks } = useStore();
+  const { addTask, updateTask, projects } = useStore();
   const [title, setTitle] = useState(initialTask?.title || "");
   const [description, setDescription] = useState(
     initialTask?.description || "",
@@ -287,60 +287,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             )}
           </button>
         </div>
-
-        {standardTasks.length > 0 && (
-          <select
-            onChange={(e) => {
-              const task = standardTasks.find((t) => t.id === e.target.value);
-              if (task) {
-                setTitle(task.title);
-                if (task.description) setDescription(task.description);
-                if (task.projectId) setProjectId(task.projectId);
-                if (task.type) setType(task.type);
-                if (task.priority) setPriority(task.priority);
-
-                const today = new Date().toISOString().split("T")[0];
-
-                // Handle intervals
-                if (task.intervals && task.intervals.length > 0) {
-                  const newIntervals = task.intervals.map((i) => ({
-                    startTime: `${today}T${i.startTime}`,
-                    endTime: `${today}T${i.endTime}`,
-                  }));
-                  setIntervals(newIntervals);
-                } else if (task.startTime && task.endTime) {
-                  // Backward compatibility for dev state
-                  setIntervals([
-                    {
-                      startTime: `${today}T${task.startTime}`,
-                      endTime: `${today}T${task.endTime}`,
-                    },
-                  ]);
-                }
-
-                setIsPastTask(true);
-              }
-            }}
-            style={{
-              width: "100%",
-              height: "36px",
-              padding: "0 0.75rem",
-              borderRadius: "var(--radius-sm)",
-              border: "1px dashed var(--color-accent)",
-              backgroundColor: "transparent",
-              color: "var(--color-accent)",
-              fontSize: "0.9rem",
-              cursor: "pointer",
-            }}
-          >
-            <option value="">Load Standard Task...</option>
-            {standardTasks.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.title}
-              </option>
-            ))}
-          </select>
-        )}
 
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <select

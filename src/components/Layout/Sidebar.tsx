@@ -2,11 +2,9 @@ import React from "react";
 import {
   LayoutDashboard,
   CheckSquare,
-  ClipboardList,
   StickyNote,
   MessageSquare,
   Activity,
-  FolderKanban,
   Calendar,
   LogIn,
   LogOut,
@@ -80,11 +78,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     { id: "organizations", label: "Organizations", icon: <Globe size={20} /> },
     { id: "tasks", label: "My Tasks", icon: <CheckSquare size={20} /> },
-    {
-      id: "standard-tasks",
-      label: "Standard Tasks",
-      icon: <ClipboardList size={20} />,
-    },
     { id: "calendar", label: "Calendar", icon: <Calendar size={20} /> },
     { id: "notes", label: "Notes", icon: <StickyNote size={20} /> },
     {

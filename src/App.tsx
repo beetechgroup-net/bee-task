@@ -6,7 +6,6 @@ import { Dashboard } from "./components/Dashboard/Dashboard";
 import { BlendaDashboard } from "./components/Dashboard/BlendaDashboard";
 import { CalendarView } from "./components/Calendar/CalendarView";
 import { SummaryReport } from "./components/Reports/SummaryReport";
-import { StandardTasksView } from "./components/StandardTask/StandardTasksView";
 import { NotesProvider } from "./context/NotesContext";
 import { NotesView } from "./components/Notes/NotesView";
 import { ChatView } from "./components/Chat/ChatView";
@@ -69,8 +68,6 @@ function AppContent() {
         return <CalendarView />;
       case "organizations":
         return <OrganizationView />;
-      case "standard-tasks":
-        return <StandardTasksView />;
       case "notes":
         return <NotesView />;
       case "chat":

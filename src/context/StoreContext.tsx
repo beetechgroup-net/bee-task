@@ -1,11 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import type {
-  Task,
-  TaskType,
-  StandardTask,
-  TaskHistory,
-} from "../types";
+import type { Task, TaskType, TaskHistory } from "../types";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useFirestoreSync } from "../hooks/useFirestoreSync";
 import { useAuth } from "./AuthContext";
@@ -37,11 +32,6 @@ interface StoreContextType {
 
   getTaskDuration: (task: Task) => number;
 
-  standardTasks: StandardTask[];
-  addStandardTask: (task: Omit<StandardTask, "id">) => void;
-  updateStandardTask: (id: string, updates: Partial<StandardTask>) => void;
-  deleteStandardTask: (id: string) => void;
-
   projects: OrganizationProject[];
 
   // Version control
@@ -56,10 +46,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [tasks, setTasks] = useLocalStorage<Task[]>("tasks", []);
-  const [standardTasks, setStandardTasks] = useLocalStorage<StandardTask[]>(
-    "standardTasks",
-    [],
-  );
 
   useEffect(() => {
     console.log(`[StoreContext] Current tasks state:`, tasks.length, "items");
@@ -75,12 +61,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Sync to Firestore
   useFirestoreSync<Task[]>("tasks", tasks, setTasks, user?.uid);
-  useFirestoreSync<StandardTask[]>(
-    "standardTasks",
-    standardTasks,
-    setStandardTasks,
-    user?.uid,
-  );
 
   const { organizations } = useOrganizations();
   const projects = React.useMemo(() => {
@@ -286,20 +266,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     }, 0);
   };
 
-  const addStandardTask = (task: Omit<StandardTask, "id">) => {
-    setStandardTasks([...standardTasks, { ...task, id: uuidv4() }]);
-  };
-
-  const updateStandardTask = (id: string, updates: Partial<StandardTask>) => {
-    setStandardTasks(
-      standardTasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-    );
-  };
-
-  const deleteStandardTask = (id: string) => {
-    setStandardTasks(standardTasks.filter((t) => t.id !== id));
-  };
-
   const checkVersionBanner = (currentVersion: string) => {
     const lastSeen = localStorage.getItem("bee-task-last-seen-version");
     // Show if never seen (null) or if last seen version is different from current
@@ -315,74 +281,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
     window.location.reload();
   };
 
-  // Check for auto-creating standard tasks
-  useEffect(() => {
-    const checkAndCreateAutoTasks = () => {
-      const now = new Date();
-      const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-
-      // Only run on weekdays (Mon-Fri)
-      if (dayOfWeek === 0 || dayOfWeek === 6) return;
-
-      const todayStart = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-      ).getTime();
-
-      const tasksToCreate: Task[] = [];
-      const standardTasksUpdates: { id: string; lastAutoCreated: number }[] =
-        [];
-
-      standardTasks.forEach((st) => {
-        if (!st.autoCreate) return;
-
-        // Check if already created today
-        if (st.lastAutoCreated && st.lastAutoCreated >= todayStart) {
-          return;
-        }
-
-        // Create Task
-        const newTask: Task = {
-          id: uuidv4(),
-          title: st.title,
-          description: st.description,
-          projectId: "default",
-          type: st.type || "Development",
-          priority: st.priority || "medium",
-          status: "todo",
-          logs: [],
-          history: [
-            {
-              id: uuidv4(),
-              action: "create",
-              timestamp: Date.now(),
-            },
-          ],
-          createdAt: Date.now(),
-        };
-
-        tasksToCreate.push(newTask);
-        standardTasksUpdates.push({ id: st.id, lastAutoCreated: Date.now() });
-      });
-
-      if (tasksToCreate.length > 0) {
-        setTasks((prev) => [...prev, ...tasksToCreate]);
-        setStandardTasks((prev) =>
-          prev.map((st) => {
-            const update = standardTasksUpdates.find((u) => u.id === st.id);
-            return update
-              ? { ...st, lastAutoCreated: update.lastAutoCreated }
-              : st;
-          }),
-        );
-      }
-    };
-
-    // Check immediately when dependencies change (e.g. on mount or when standardTasks update)
-    checkAndCreateAutoTasks();
-  }, [standardTasks, setStandardTasks, setTasks]);
-
   return (
     <StoreContext.Provider
       value={{
@@ -392,10 +290,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({
         deleteTask,
         toggleTaskLog,
         getTaskDuration,
-        standardTasks,
-        addStandardTask,
-        updateStandardTask,
-        deleteStandardTask,
         projects,
         checkVersionBanner,
         dismissVersionBanner,
