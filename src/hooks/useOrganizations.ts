@@ -15,6 +15,7 @@ import type {
   Organization,
   OrganizationRequest,
   OrganizationMember,
+  OrganizationProject,
 } from "../types";
 import { useAuth } from "../context/AuthContext";
 
@@ -146,6 +147,42 @@ export function useOrganizations() {
     }
   };
 
+  const addProject = async (orgId: string, name: string, color: string) => {
+    if (!user) throw new Error("Must be logged in.");
+
+    const newProject: OrganizationProject = {
+      id: uuidv4(),
+      name,
+      color,
+      createdAt: Date.now(),
+      createdBy: user.uid,
+    };
+
+    try {
+      const orgRef = doc(db, "organizations", orgId);
+      await updateDoc(orgRef, {
+        projects: arrayUnion(newProject),
+      });
+    } catch (err) {
+      console.error("Error adding project:", err);
+      throw new Error("Failed to add project.");
+    }
+  };
+
+  const removeProject = async (orgId: string, project: OrganizationProject) => {
+    if (!user) throw new Error("Must be logged in.");
+
+    try {
+      const orgRef = doc(db, "organizations", orgId);
+      await updateDoc(orgRef, {
+        projects: arrayRemove(project),
+      });
+    } catch (err) {
+      console.error("Error removing project:", err);
+      throw new Error("Failed to remove project.");
+    }
+  };
+
   return {
     organizations,
     loading,
@@ -155,5 +192,7 @@ export function useOrganizations() {
     acceptRequest,
     rejectRequest,
     removeMember,
+    addProject,
+    removeProject,
   };
 }

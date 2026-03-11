@@ -6,7 +6,6 @@ import { Dashboard } from "./components/Dashboard/Dashboard";
 import { BlendaDashboard } from "./components/Dashboard/BlendaDashboard";
 import { CalendarView } from "./components/Calendar/CalendarView";
 import { SummaryReport } from "./components/Reports/SummaryReport";
-import { ProjectsView } from "./components/Project/ProjectsView";
 import { StandardTasksView } from "./components/StandardTask/StandardTasksView";
 import { NotesProvider } from "./context/NotesContext";
 import { NotesView } from "./components/Notes/NotesView";
@@ -68,8 +67,6 @@ function AppContent() {
         return <TasksView />;
       case "calendar":
         return <CalendarView />;
-      case "projects":
-        return <ProjectsView />;
       case "organizations":
         return <OrganizationView />;
       case "standard-tasks":

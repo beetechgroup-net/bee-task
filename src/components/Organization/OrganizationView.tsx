@@ -17,6 +17,8 @@ export const OrganizationView: React.FC = () => {
     acceptRequest,
     rejectRequest,
     removeMember,
+    addProject,
+    removeProject,
   } = useOrganizations();
   const { user } = useAuth();
 
@@ -159,6 +161,8 @@ export const OrganizationView: React.FC = () => {
             organizations={myOrgs}
             showRequestBtn={false}
             onRemoveMember={removeMember}
+            onAddProject={addProject}
+            onRemoveProject={removeProject}
             emptyMessage="You are not part of any organization yet."
           />
         )}

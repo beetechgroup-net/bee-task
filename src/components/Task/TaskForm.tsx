@@ -19,9 +19,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [description, setDescription] = useState(
     initialTask?.description || "",
   );
-  const [projectId, setProjectId] = useState(
-    initialTask?.projectId || projects[0]?.id || "",
-  );
+  const [projectId, setProjectId] = useState(initialTask?.projectId || "");
   const [type, setType] = useState(initialTask?.type || "Development");
   const [priority, setPriority] = useState<"low" | "medium" | "high">(
     initialTask?.priority || "medium",
@@ -358,6 +356,9 @@ export const TaskForm: React.FC<TaskFormProps> = ({
               color: "var(--color-text-primary)",
             }}
           >
+            <option value="" disabled>
+              Select Project...
+            </option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}

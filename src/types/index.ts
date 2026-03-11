@@ -86,6 +86,14 @@ export interface OrganizationMember {
   joinedAt: number;
 }
 
+export interface OrganizationProject {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: number;
+  createdBy: string;
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -93,5 +101,6 @@ export interface Organization {
   ownerId: string;
   members: OrganizationMember[];
   pendingRequests: OrganizationRequest[];
+  projects?: OrganizationProject[];
   createdAt: number;
 }

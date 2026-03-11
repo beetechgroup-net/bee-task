@@ -33,9 +33,9 @@ export const SummaryReport: React.FC<SummaryReportProps> = ({
   userId: propUserId,
 }) => {
   const { user: authUser } = useAuth();
-  const { tasks: storeTasks, projects: storeProjects } = useStore();
+  const { tasks: storeTasks } = useStore();
   const tasks = propTasks || storeTasks;
-  const projects = propProjects || storeProjects;
+  const projects = propProjects;
   const [range, setRange] = useState<TimeRange>("day");
   const [referenceDate] = useState(new Date());
   const [fetchedHours, setFetchedHours] = useState<number | null>(null);
@@ -352,7 +352,7 @@ export const SummaryReport: React.FC<SummaryReportProps> = ({
           >
             Time by Project
           </h3>
-          <SimpleBarChart
+          {/* <SimpleBarChart
             data={durationByProject}
             getColor={(id) =>
               projects.find((p) => p.id === id)?.color ||
@@ -361,7 +361,7 @@ export const SummaryReport: React.FC<SummaryReportProps> = ({
             getLabel={(id) =>
               projects.find((p) => p.id === id)?.name || "Unknown"
             }
-          />
+          /> */}
         </div>
 
         {/* By Type Chart */}

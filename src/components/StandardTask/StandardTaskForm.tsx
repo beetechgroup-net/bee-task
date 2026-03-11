@@ -14,9 +14,7 @@ export const StandardTaskForm: React.FC<StandardTaskFormProps> = ({
 }) => {
   const { addStandardTask, updateStandardTask, projects } = useStore();
   const [title, setTitle] = useState(initialValues?.title || "");
-  const [projectId, setProjectId] = useState(
-    initialValues?.projectId || projects[0]?.id || "",
-  );
+  const [projectId, setProjectId] = useState(initialValues?.projectId || "");
   const [type, setType] = useState(initialValues?.type || "Development");
   const [priority, setPriority] = useState<"low" | "medium" | "high">(
     initialValues?.priority || "medium",
@@ -32,7 +30,7 @@ export const StandardTaskForm: React.FC<StandardTaskFormProps> = ({
   useEffect(() => {
     if (initialValues) {
       setTitle(initialValues.title);
-      setProjectId(initialValues.projectId || projects[0]?.id || "");
+      setProjectId(initialValues.projectId || "");
       setType(initialValues.type || "Development");
       setPriority(initialValues.priority || "medium");
       setAutoCreate(initialValues.autoCreate || false);
@@ -271,6 +269,9 @@ export const StandardTaskForm: React.FC<StandardTaskFormProps> = ({
             color: "var(--color-text-primary)",
           }}
         >
+          <option value="" disabled>
+            Select Project...
+          </option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
