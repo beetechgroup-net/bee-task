@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { format, isSameMonth } from "date-fns";
+import { format, isSameMonth, subMonths } from "date-fns";
 import { useStore } from "../../context/StoreContext";
 import {
   CalendarCheck,
@@ -95,9 +95,14 @@ export const MonthlyCompletedTasks: React.FC<{ tasks?: Task[] }> = ({
 }) => {
   const { tasks: storeTasks, getTaskDuration } = useStore();
   const tasks = propTasks || storeTasks;
+  const [monthOffset, setMonthOffset] = useState(0);
+
+  const targetMonth = useMemo(
+    () => subMonths(new Date(), monthOffset),
+    [monthOffset],
+  );
 
   const completedTasks = useMemo(() => {
-    const now = new Date();
     return tasks
       .filter((task) => {
         if (task.status !== "done") return false;
@@ -109,13 +114,13 @@ export const MonthlyCompletedTasks: React.FC<{ tasks?: Task[] }> = ({
           .find((h: TaskHistory) => h.action === "finish");
 
         if (finishEvent) {
-          return isSameMonth(new Date(finishEvent.timestamp), now);
+          return isSameMonth(new Date(finishEvent.timestamp), targetMonth);
         }
 
         // If no history event, check logs (not ideal but fallback)
         const lastLog = task.logs[task.logs.length - 1];
         if (lastLog?.endTime) {
-          return isSameMonth(new Date(lastLog.endTime), now);
+          return isSameMonth(new Date(lastLog.endTime), targetMonth);
         }
 
         return false;
@@ -132,7 +137,7 @@ export const MonthlyCompletedTasks: React.FC<{ tasks?: Task[] }> = ({
         };
         return getEndTime(b) - getEndTime(a);
       });
-  }, [tasks]);
+  }, [tasks, targetMonth]);
 
   const groupedTasks = useMemo(() => {
     const groups: Record<string, Task[]> = {};
@@ -175,30 +180,105 @@ export const MonthlyCompletedTasks: React.FC<{ tasks?: Task[] }> = ({
     });
   };
 
-  if (completedTasks.length === 0) {
-    return null;
-  }
-
   return (
     <div>
-      <h3
+      <div
         style={{
-          fontSize: "1.25rem",
-          fontWeight: 600,
-          marginBottom: "1rem",
-          color: "var(--color-text-primary)",
           display: "flex",
           alignItems: "center",
-          gap: "0.5rem",
+          justifyContent: "space-between",
+          marginBottom: "1rem",
         }}
       >
-        <CalendarCheck size={20} className="text-accent" />
-        Completed This Month ({completedTasks.length})
-      </h3>
-      <div>
-        {Object.entries(groupedTasks).map(([type, typeTasks]) => {
-          const isOpen =
-            openSections[type] !== undefined ? openSections[type] : true;
+        <h3
+          style={{
+            fontSize: "1.25rem",
+            fontWeight: 600,
+            margin: 0,
+            color: "var(--color-text-primary)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          <CalendarCheck size={20} className="text-accent" />
+          {monthOffset === 0 ? "Completed This Month" : "Completed Last Month"}
+          <span
+            style={{
+              fontSize: "0.9rem",
+              color: "var(--color-text-secondary)",
+              fontWeight: 400,
+              marginLeft: "0.25rem",
+            }}
+          >
+            ({completedTasks.length})
+          </span>
+        </h3>
+
+        <div
+          style={{
+            display: "flex",
+            backgroundColor: "var(--color-bg-secondary)",
+            padding: "2px",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--color-bg-tertiary)",
+          }}
+        >
+          <button
+            onClick={() => setMonthOffset(0)}
+            style={{
+              padding: "0.4rem 0.8rem",
+              fontSize: "0.85rem",
+              fontWeight: monthOffset === 0 ? 600 : 400,
+              border: "none",
+              borderRadius: "calc(var(--radius-md) - 2px)",
+              backgroundColor:
+                monthOffset === 0 ? "var(--color-accent)" : "transparent",
+              color: monthOffset === 0 ? "white" : "var(--color-text-secondary)",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            This Month
+          </button>
+          <button
+            onClick={() => setMonthOffset(1)}
+            style={{
+              padding: "0.4rem 0.8rem",
+              fontSize: "0.85rem",
+              fontWeight: monthOffset === 1 ? 600 : 400,
+              border: "none",
+              borderRadius: "calc(var(--radius-md) - 2px)",
+              backgroundColor:
+                monthOffset === 1 ? "var(--color-accent)" : "transparent",
+              color: monthOffset === 1 ? "white" : "var(--color-text-secondary)",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            Last Month
+          </button>
+        </div>
+      </div>
+
+      {completedTasks.length === 0 ? (
+        <div
+          style={{
+            padding: "2rem",
+            textAlign: "center",
+            backgroundColor: "var(--color-bg-secondary)",
+            borderRadius: "var(--radius-lg)",
+            border: "1px dashed var(--color-bg-tertiary)",
+            color: "var(--color-text-tertiary)",
+          }}
+        >
+          No tasks completed in this period.
+        </div>
+      ) : (
+        <div>
+          {Object.entries(groupedTasks).map(([type, typeTasks]) => {
+            const isOpen =
+              openSections[type] !== undefined ? openSections[type] : true;
 
           return (
             <CollapsibleSection
@@ -321,6 +401,7 @@ export const MonthlyCompletedTasks: React.FC<{ tasks?: Task[] }> = ({
           );
         })}
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 };

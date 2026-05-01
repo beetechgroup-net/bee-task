@@ -1,0 +1,65 @@
+{
+  "name": "bee-task-vscode",
+  "displayName": "Bee Task",
+  "description": "Manage your Bee Task tasks directly from VS Code",
+  "version": "0.1.0",
+  "publisher": "gabrielsmenezes",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "bee-task.toggleTask",
+        "title": "Bee Task: Start/Pause current Task",
+        "icon": "$(play)"
+      },
+      {
+        "command": "bee-task.createTask",
+        "title": "Bee Task: New Task"
+      },
+      {
+        "command": "bee-task.finishTask",
+        "title": "Bee Task: Finish Task"
+      }
+    ],
+    "configuration": {
+      "title": "Bee Task",
+      "properties": {
+        "beeTask.userId": {
+          "type": "string",
+          "default": "",
+          "description": "Your Bee Task User ID"
+        },
+        "beeTask.serviceAccountPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to your Firebase Service Account JSON file"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.8.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.0.0"
+  }
+}
