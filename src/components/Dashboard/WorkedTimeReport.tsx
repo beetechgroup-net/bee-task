@@ -77,34 +77,64 @@ export const WorkedTimeReport: React.FC<WorkedTimeReportProps> = ({
 
   // Compute intervals and metrics
   const metrics = useMemo(() => {
-    let start: Date;
-    let end: Date;
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth(); // 0-indexed
+    const currentDay = now.getDate();
+
+    let workedMs = 0;
+    let expectedMs = 0;
+    const includedMonthIndices: number[] = [];
 
     if (periodType === "mensal") {
-      start = new Date(selectedYear, selectedMonth, 1, 0, 0, 0, 0);
-      end = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999);
+      const start = new Date(selectedYear, selectedMonth, 1, 0, 0, 0, 0);
+      const end = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999);
+      
+      const allLogs = tasks.flatMap((t) => t.logs);
+      workedMs = calculateDurationInInterval(allLogs, start.getTime(), end.getTime());
+      expectedMs = dailyHours > 0 ? calculateCapacityInMs(start, end, dailyHours) : 0;
     } else {
-      // Anual: Apenas dos meses anteriores ao mês corrente
-      start = new Date(selectedYear, 0, 1, 0, 0, 0, 0);
-      if (selectedYear < currentYear) {
-        end = new Date(selectedYear, 11, 31, 23, 59, 59, 999);
-      } else if (selectedYear === currentYear) {
-        if (currentMonth === 0) {
-          end = new Date(selectedYear, 0, 1, 0, 0, 0, 0); // No completed months yet
+      // Anual
+      const allLogs = tasks.flatMap((t) => t.logs);
+      
+      for (let m = 0; m < 12; m++) {
+        let startOfMonth: Date;
+        let endOfMonth: Date;
+
+        if (selectedYear === currentYear && m === currentMonth) {
+          // Mês atual: Apenas até o dia anterior ao dia corrente
+          startOfMonth = new Date(selectedYear, m, 1, 0, 0, 0, 0);
+          if (currentDay === 1) {
+            // Se hoje é dia 1, não há dias anteriores neste mês ainda
+            continue;
+          } else {
+            endOfMonth = new Date(selectedYear, m, currentDay - 1, 23, 59, 59, 999);
+          }
+        } else if (selectedYear === currentYear && m > currentMonth) {
+          // Meses futuros do ano corrente: ignorar
+          continue;
+        } else if (selectedYear > currentYear) {
+          // Anos futuros: ignorar
+          continue;
         } else {
-          end = new Date(selectedYear, currentMonth, 0, 23, 59, 59, 999); // last day of currentMonth - 1
+          // Meses passados completos
+          startOfMonth = new Date(selectedYear, m, 1, 0, 0, 0, 0);
+          endOfMonth = new Date(selectedYear, m + 1, 0, 23, 59, 59, 999);
         }
-      } else {
-        end = new Date(selectedYear, 0, 1, 0, 0, 0, 0); // Future year: empty range
+
+        const monthWorkedMs = calculateDurationInInterval(allLogs, startOfMonth.getTime(), endOfMonth.getTime());
+        
+        // Incluir no relatório anual apenas se o usuário trabalhou pelo menos 1 dia (mais de 0ms)
+        if (monthWorkedMs > 0) {
+          includedMonthIndices.push(m);
+          workedMs += monthWorkedMs;
+          if (dailyHours > 0) {
+            expectedMs += calculateCapacityInMs(startOfMonth, endOfMonth, dailyHours);
+          }
+        }
       }
     }
 
-    const allLogs = tasks.flatMap((t) => t.logs);
-    const workedMs = calculateDurationInInterval(allLogs, start.getTime(), end.getTime());
-    const expectedMs = dailyHours > 0 ? calculateCapacityInMs(start, end, dailyHours) : 0;
     const balanceMs = workedMs - expectedMs;
 
     return {
@@ -114,6 +144,7 @@ export const WorkedTimeReport: React.FC<WorkedTimeReportProps> = ({
       hasHoursConfigured: dailyHours > 0,
       currentYear,
       currentMonth,
+      includedMonthIndices,
     };
   }, [tasks, periodType, selectedMonth, selectedYear, dailyHours]);
 
@@ -131,17 +162,29 @@ export const WorkedTimeReport: React.FC<WorkedTimeReportProps> = ({
   };
 
   const getAnnualPeriodDescription = () => {
-    const { currentYear, currentMonth } = metrics;
-    if (selectedYear < currentYear) {
-      return `O cálculo considera o ano completo de ${selectedYear} (Janeiro a Dezembro).`;
-    } else if (selectedYear === currentYear) {
-      if (currentMonth === 0) {
-        return `O cálculo de ${selectedYear} considera apenas os meses anteriores ao corrente (nenhum mês concluído ainda).`;
-      }
-      return `O cálculo de ${selectedYear} considera apenas os meses concluídos anteriores ao corrente (Janeiro a ${MONTHS_PT[currentMonth - 1]} de ${selectedYear}).`;
-    } else {
-      return `O ano selecionado (${selectedYear}) está no futuro. O cálculo considera apenas meses concluídos anteriores ao mês corrente (saldo zerado).`;
+    const { currentYear, currentMonth, includedMonthIndices } = metrics;
+    const now = new Date();
+    const yesterdayDay = now.getDate() - 1;
+
+    if (!includedMonthIndices || includedMonthIndices.length === 0) {
+      return `Nenhum mês de ${selectedYear} possui registros de trabalho.`;
     }
+
+    const monthNames = includedMonthIndices.map((m) => {
+      if (selectedYear === currentYear && m === currentMonth) {
+        return `${MONTHS_PT[m]} (até o dia ${yesterdayDay})`;
+      }
+      return MONTHS_PT[m];
+    });
+
+    const listStr = monthNames.join(", ");
+    let baseText = `O cálculo anual de ${selectedYear} considera apenas os meses ativos (com trabalho registrado): ${listStr}.`;
+
+    if (selectedYear === currentYear && includedMonthIndices.includes(currentMonth)) {
+      baseText += ` O mês atual (${MONTHS_PT[currentMonth]}) está sendo contabilizado apenas até ontem (dia ${yesterdayDay}).`;
+    }
+
+    return baseText;
   };
 
   return (
