@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { db } from "../../lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { DailyStandupView } from "../Reports/DailyStandupView";
-import { SummaryReport } from "../Reports/SummaryReport";
+import { WorkedTimeReport } from "./WorkedTimeReport";
 import { MonthlyCompletedTasks } from "./MonthlyCompletedTasks";
 import type { Task } from "../../types";
 import { ArrowLeft, Mail, User, Briefcase, Clock } from "lucide-react";
@@ -262,16 +262,9 @@ export const PersonDetail: React.FC<PersonDetailProps> = ({
           <DailyStandupView tasks={tasks} />
         </section>
 
-        {/* Summary Report Section */}
-        <section
-          style={{
-            backgroundColor: "var(--color-bg-secondary)",
-            padding: "1.5rem",
-            borderRadius: "var(--radius-lg)",
-            border: "1px solid var(--color-bg-tertiary)",
-          }}
-        >
-          <SummaryReport
+        {/* Worked Time Report Section */}
+        <section>
+          <WorkedTimeReport
             tasks={tasks}
             dailyWorkHours={user.dailyWorkHours}
             userId={userId}

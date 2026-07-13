@@ -1,6 +1,6 @@
 import React from "react";
 import { DailyStandupView } from "../Reports/DailyStandupView";
-import { SummaryReport } from "../Reports/SummaryReport";
+import { WorkedTimeReport } from "./WorkedTimeReport";
 import { useStore } from "../../context/StoreContext";
 import { TaskCard } from "../Task/TaskCard";
 import { MonthlyCompletedTasks } from "./MonthlyCompletedTasks";
@@ -44,11 +44,13 @@ export const Dashboard: React.FC = () => {
         </section>
       )}
 
+      {/* Relatório de Tempo Trabalhado */}
+      <section style={{ marginBottom: "2rem" }}>
+        <WorkedTimeReport />
+      </section>
+
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: "1.5rem",
           paddingBottom: "2rem",
         }}
       >
@@ -61,17 +63,6 @@ export const Dashboard: React.FC = () => {
           }}
         >
           <DailyStandupView />
-        </section>
-
-        <section
-          style={{
-            backgroundColor: "var(--color-bg-secondary)",
-            padding: "1.5rem",
-            borderRadius: "var(--radius-lg)",
-            border: "1px solid var(--color-bg-tertiary)",
-          }}
-        >
-          <SummaryReport />
         </section>
       </div>
 

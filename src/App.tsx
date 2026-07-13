@@ -5,7 +5,7 @@ import { TasksView } from "./components/Task/TasksView";
 import { Dashboard } from "./components/Dashboard/Dashboard";
 import { BlendaDashboard } from "./components/Dashboard/BlendaDashboard";
 import { CalendarView } from "./components/Calendar/CalendarView";
-import { SummaryReport } from "./components/Reports/SummaryReport";
+
 import { NotesProvider } from "./context/NotesContext";
 import { NotesView } from "./components/Notes/NotesView";
 import { ChatView } from "./components/Chat/ChatView";
@@ -72,8 +72,7 @@ function AppContent() {
         return <NotesView />;
       case "chat":
         return <ChatView onChangeView={setCurrentView} />;
-      case "reports":
-        return <SummaryReport />;
+
       case "suggestions":
         return <SuggestionsView />;
       case "profile":
