@@ -79,13 +79,27 @@ export const WorkedTimeReport: React.FC<WorkedTimeReportProps> = ({
   const metrics = useMemo(() => {
     let start: Date;
     let end: Date;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-indexed
 
     if (periodType === "mensal") {
       start = new Date(selectedYear, selectedMonth, 1, 0, 0, 0, 0);
       end = new Date(selectedYear, selectedMonth + 1, 0, 23, 59, 59, 999);
     } else {
+      // Anual: Apenas dos meses anteriores ao mês corrente
       start = new Date(selectedYear, 0, 1, 0, 0, 0, 0);
-      end = new Date(selectedYear, 11, 31, 23, 59, 59, 999);
+      if (selectedYear < currentYear) {
+        end = new Date(selectedYear, 11, 31, 23, 59, 59, 999);
+      } else if (selectedYear === currentYear) {
+        if (currentMonth === 0) {
+          end = new Date(selectedYear, 0, 1, 0, 0, 0, 0); // No completed months yet
+        } else {
+          end = new Date(selectedYear, currentMonth, 0, 23, 59, 59, 999); // last day of currentMonth - 1
+        }
+      } else {
+        end = new Date(selectedYear, 0, 1, 0, 0, 0, 0); // Future year: empty range
+      }
     }
 
     const allLogs = tasks.flatMap((t) => t.logs);
@@ -98,6 +112,8 @@ export const WorkedTimeReport: React.FC<WorkedTimeReportProps> = ({
       expectedMs,
       balanceMs,
       hasHoursConfigured: dailyHours > 0,
+      currentYear,
+      currentMonth,
     };
   }, [tasks, periodType, selectedMonth, selectedYear, dailyHours]);
 
@@ -112,6 +128,20 @@ export const WorkedTimeReport: React.FC<WorkedTimeReportProps> = ({
   const getProgressPercentage = () => {
     if (metrics.expectedMs <= 0) return 0;
     return Math.min((metrics.workedMs / metrics.expectedMs) * 100, 100);
+  };
+
+  const getAnnualPeriodDescription = () => {
+    const { currentYear, currentMonth } = metrics;
+    if (selectedYear < currentYear) {
+      return `O cálculo considera o ano completo de ${selectedYear} (Janeiro a Dezembro).`;
+    } else if (selectedYear === currentYear) {
+      if (currentMonth === 0) {
+        return `O cálculo de ${selectedYear} considera apenas os meses anteriores ao corrente (nenhum mês concluído ainda).`;
+      }
+      return `O cálculo de ${selectedYear} considera apenas os meses concluídos anteriores ao corrente (Janeiro a ${MONTHS_PT[currentMonth - 1]} de ${selectedYear}).`;
+    } else {
+      return `O ano selecionado (${selectedYear}) está no futuro. O cálculo considera apenas meses concluídos anteriores ao mês corrente (saldo zerado).`;
+    }
   };
 
   return (
@@ -224,6 +254,27 @@ export const WorkedTimeReport: React.FC<WorkedTimeReportProps> = ({
           </select>
         </div>
       </div>
+
+      {/* Info notice about annual calculation */}
+      {periodType === "anual" && (
+        <div
+          style={{
+            fontSize: "0.85rem",
+            color: "var(--color-text-secondary)",
+            backgroundColor: "var(--color-bg-primary)",
+            padding: "0.75rem 1rem",
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--color-bg-tertiary)",
+            marginBottom: "1.5rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          <AlertTriangle size={16} style={{ color: "var(--color-text-accent)", flexShrink: 0 }} />
+          <span>{getAnnualPeriodDescription()}</span>
+        </div>
+      )}
 
       {/* Main Stats Grid */}
       <div
