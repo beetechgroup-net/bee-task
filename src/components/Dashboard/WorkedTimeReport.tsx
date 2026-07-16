@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { db } from "../../lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
 import { useStore } from "../../context/StoreContext";
 import type { Task } from "../../types";
@@ -49,22 +49,25 @@ export const WorkedTimeReport: React.FC<WorkedTimeReportProps> = ({
 
   // Fetch dailyWorkHours if not passed as prop
   useEffect(() => {
-    const fetchHours = async () => {
-      if (propDailyWorkHours !== undefined || !targetUserId) return;
-      try {
-        const userRef = doc(db, "users", targetUserId);
-        const snap = await getDoc(userRef);
+    if (propDailyWorkHours !== undefined || !targetUserId) return;
+    
+    const userRef = doc(db, "users", targetUserId);
+    const unsubscribe = onSnapshot(
+      userRef,
+      (snap) => {
         if (snap.exists()) {
           const data = snap.data();
           if (data.dailyWorkHours !== undefined) {
             setFetchedHours(data.dailyWorkHours);
           }
         }
-      } catch (err) {
-        console.error("Error fetching dailyWorkHours in WorkedTimeReport:", err);
+      },
+      (err) => {
+        console.error("Error listening to dailyWorkHours in WorkedTimeReport:", err);
       }
-    };
-    fetchHours();
+    );
+
+    return () => unsubscribe();
   }, [targetUserId, propDailyWorkHours]);
 
   const dailyHours = propDailyWorkHours ?? fetchedHours ?? 0;

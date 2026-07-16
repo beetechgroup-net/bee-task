@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { db } from "../../lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useAuth } from "../../context/AuthContext";
 import { useStore } from "../../context/StoreContext";
 import type { Task } from "../../types";
@@ -38,22 +38,25 @@ export const WorkCapacitySection: React.FC<WorkCapacitySectionProps> = ({
   const defaultHours = propDailyWorkHours ?? fetchedHours ?? 0;
 
   useEffect(() => {
-    const fetchHours = async () => {
-      if (propDailyWorkHours !== undefined || !userId) return;
-      try {
-        const userRef = doc(db, "users", userId);
-        const snap = await getDoc(userRef);
+    if (propDailyWorkHours !== undefined || !userId) return;
+
+    const userRef = doc(db, "users", userId);
+    const unsubscribe = onSnapshot(
+      userRef,
+      (snap) => {
         if (snap.exists()) {
           const data = snap.data();
           if (data.dailyWorkHours) {
             setFetchedHours(data.dailyWorkHours);
           }
         }
-      } catch (err) {
-        console.error("Error fetching dailyWorkHours:", err);
+      },
+      (err) => {
+        console.error("Error listening to dailyWorkHours in WorkCapacitySection:", err);
       }
-    };
-    fetchHours();
+    );
+
+    return () => unsubscribe();
   }, [userId, propDailyWorkHours]);
 
   const metrics = useMemo(() => {
