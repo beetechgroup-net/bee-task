@@ -49,9 +49,7 @@ export const TasksView: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [filter, setFilter] = useState<"todo" | "done">("todo");
-  const [collapsedSections, setCollapsedSections] = useState<
-    Record<string, boolean>
-  >({});
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState("");
 
   // Separate the active task from the list if there is one
@@ -143,27 +141,28 @@ export const TasksView: React.FC = () => {
   }, [tasks]);
 
   const isSectionOpen = (key: string) => {
-    return collapsedSections[key] !== true;
+    return openSections[key] === true;
   };
 
   const toggleSection = (key: string) => {
-    setCollapsedSections((prev) => ({
+    setOpenSections((prev) => ({
       ...prev,
-      [key]: !prev[key],
+      [key]: !isSectionOpen(key),
     }));
   };
 
-  const allExpanded = doneGroups.every((g) => isSectionOpen(g.key));
+  const allExpanded =
+    doneGroups.length > 0 && doneGroups.every((g) => isSectionOpen(g.key));
 
   const toggleAllSections = () => {
-    const shouldCollapse = allExpanded;
-    const newCollapsed: Record<string, boolean> = {};
-    if (shouldCollapse) {
+    const shouldExpand = !allExpanded;
+    const newOpen: Record<string, boolean> = {};
+    if (shouldExpand) {
       doneGroups.forEach((g) => {
-        newCollapsed[g.key] = true;
+        newOpen[g.key] = true;
       });
     }
-    setCollapsedSections(newCollapsed);
+    setOpenSections(newOpen);
   };
 
   return (
