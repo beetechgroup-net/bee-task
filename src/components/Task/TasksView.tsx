@@ -47,7 +47,7 @@ const getTaskCompletionTime = (task: Task): number => {
 export const TasksView: React.FC = () => {
   const { tasks, projects, getTaskDuration } = useStore();
   const [showForm, setShowForm] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
   const [filter, setFilter] = useState<"todo" | "done">("todo");
   const [collapsedSections, setCollapsedSections] = useState<
     Record<string, boolean>
@@ -372,7 +372,7 @@ export const TasksView: React.FC = () => {
         <TaskForm
           onCancel={() => {
             setShowForm(false);
-            setEditingTask(null);
+            setEditingTask(undefined);
           }}
           initialTask={editingTask}
         />
